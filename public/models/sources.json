@@ -1,0 +1,490 @@
+{
+  "models": {
+    "house": {
+      "title": "Farmhouse",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Farmhouse.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "72f637ce307ed78b1a576162325b65f1c9d3f949a343f616e61eef9324ec7a1b",
+      "file": "house.glb"
+    },
+    "coop": {
+      "title": "Chicken coop",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Chicken-Coop.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "65547b084ce0b342d30b9930250479f1a87f9085554b5bf9aba9f6ae75e76ee1",
+      "file": "coop.glb"
+    },
+    "stall": {
+      "title": "Produce stall",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Produce-Stall.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "07bb2a3d17647f5f393976ba3398f534bfcd44fdc945b0c55544eb0bbfcc2f51",
+      "file": "stall.glb"
+    },
+    "fence": {
+      "title": "Wooden fence",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Wooden-fences.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "77bc344f366843e5c249967125b0fd976618395fb0f670fa8ae6105a08917012",
+      "file": "fence.glb"
+    },
+    "sign": {
+      "title": "Farm sign",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Farm-sign.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "0ba042167397d6cbdae2e1b4a7f5d0a65c85ccc66dee8a62e65f8238f30f1f53",
+      "file": "sign.glb"
+    },
+    "soil": {
+      "title": "Field",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Field.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "4ed5ad4be27008ab4a7be17b97efb35198837abd65f3acf03f45889631f02055",
+      "file": "soil.glb"
+    },
+    "path": {
+      "title": "Dirt path",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Dirt-Path.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "0967caf86f63a6fbf73ed2d1afe1b27ff81701e2d775aec7c151243b3136d1a9",
+      "file": "path.glb"
+    },
+    "tree": {
+      "title": "Crop apple tree stage 4 fruiting",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/beach/optimized-glb/crop-apple-tree-stage-4-fruiting.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "bea31288aea29d871c88f49e66977f9af2bc2f84d0c456891149b7231f5bd476",
+      "file": "tree.glb"
+    },
+    "flowers": {
+      "title": "Flower beds",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Flower-beds.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "22d6313ddefe6a68262c4fa8deb9ff57a59d8b285fe92e8d57ae8aeb96c38c34",
+      "file": "flowers.glb"
+    },
+    "pond": {
+      "title": "Pond",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Pond.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "b0927df57c0bd0d1fd5ec48168d5baf710d0cb51b56443d5897bb08586ef6d62",
+      "file": "pond.glb"
+    },
+    "meadow": {
+      "title": "Meadow grasses",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/haven-meadow/models/meadow_grasses.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "74416b4b0f7e8286332c0279d5d7faa5e7d5a334fa3297d0ceeabc58c22586be",
+      "file": "meadow.glb"
+    },
+    "carrot-young": {
+      "title": "Crop carrot stage 2 leafy",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/beach/optimized-glb/crop-carrot-stage-2-leafy.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "221b7a9bd34328fd1b08e90de7929bc9b0da643292dae208bf27ab12c96ced2e",
+      "file": "carrot-young.glb"
+    },
+    "carrot-ripe": {
+      "title": "Crop carrot stage 4 harvest ready",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/beach/optimized-glb/crop-carrot-stage-4-harvest-ready.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "425a28ce4d7098b4cefe80588692cb671c8b593f33aa3d8c57f8b58bd76f15ba",
+      "file": "carrot-ripe.glb"
+    },
+    "berry-young": {
+      "title": "Crop strawberry stage 2 leafing",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/beach/optimized-glb/crop-strawberry-stage-2-leafing.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "836db2e67f7a8428405a988fbd5fd699bbdb695773efe3c5a08ebeb3e3f86d43",
+      "file": "berry-young.glb"
+    },
+    "berry-ripe": {
+      "title": "Crop strawberry stage 4 harvest ready",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/beach/optimized-glb/crop-strawberry-stage-4-harvest-ready.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "e8106300fea4a276d3ec31ce0b8b655fe9ad5a7ba59f9292711a1d7e72627e90",
+      "file": "berry-ripe.glb"
+    },
+    "wheat-young": {
+      "file": "wheat-young.gltf",
+      "title": "Wheat · tillering",
+      "source": "https://github.com/saswatsundar123/CropForge/blob/20eb287a5974b3c66daa3fc08d9d7bbd2495ddac/cropforge/viz/assets/standard_wheat/stage_2_tillering.gltf",
+      "license": "MIT",
+      "notice": "CropForge-MIT.txt",
+      "sha256": "c3e69d8e1a617072102c8a22c0a9f527f804bf0a126d947b7419ca5332cf7e54"
+    },
+    "wheat-ripe": {
+      "file": "wheat-ripe.gltf",
+      "title": "Wheat · senescence",
+      "source": "https://github.com/saswatsundar123/CropForge/blob/20eb287a5974b3c66daa3fc08d9d7bbd2495ddac/cropforge/viz/assets/standard_wheat/stage_6_senescence.gltf",
+      "license": "MIT",
+      "notice": "CropForge-MIT.txt",
+      "sha256": "c1266b6bebee6e68b41406398f31376d53659d037be1987140ce5665373cc56b"
+    },
+    "chicken": {
+      "file": "chicken.glb",
+      "title": "Chicken · white",
+      "source": "https://models.codelove.in/models/bird-chicken-white-01/",
+      "license": "MIT",
+      "notice": "Microsoft-MIT.txt",
+      "sha256": "4b35d282e990563dd6ff4137aa35433e94409e59341ffac7e4e9aaa02dbc820e",
+      "download": "https://models.codelove.in/models/bird-chicken-white-01.glb"
+    },
+    "barn": {
+      "title": "Cow Barn",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Cow-Barn.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "ea4ab920f604732eca568633dcb392f35f8d9078bf9a15f605a3e6ee86583026",
+      "file": "barn.glb"
+    },
+    "pigpen": {
+      "title": "Pigsty",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Pigsty.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "16650c5ff9369adc6c8876226c4a9d3f306f160c1fa90b62db0b62c6339db994",
+      "file": "pigpen.glb"
+    },
+    "sheepfold": {
+      "title": "Sheepfold",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Sheepfold.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "23cc44122976e500be4a38134dc751cf4e0129e685ba4bea8c8fa980551d5c7d",
+      "file": "sheepfold.glb"
+    },
+    "duckpond": {
+      "title": "Duck house and pond",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Duck-House.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "5b0df0adbff3d0a3898a6755cdb9f60fd6d5e02412c5a9ccc8865da28ade03e3",
+      "file": "duckpond.glb",
+      "notes": "Layout combines the upstream Duck House and Pond meshes using translation and uniform scale.",
+      "additionalSources": [
+        "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Pond.glb"
+      ]
+    },
+    "hive": {
+      "title": "Beehive",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Beehive.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "80bb2c63cd3c284f4bdb007c729860d699524334921375fb148d0073df978905",
+      "file": "hive.glb"
+    },
+    "greenhouse": {
+      "title": "Greenhouse",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Greenhouse.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "dc1a82da1aab7df09c6b36c3d58a4143336a6460cca4137ed5da78905e90c3ea",
+      "file": "greenhouse.glb"
+    },
+    "mill": {
+      "title": "Flour Mill",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Flour-Mill.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "b700bc57b399a0541e9534d276ffecf02ee9913a95a0fb261ca7c4508d661596",
+      "file": "mill.glb"
+    },
+    "bakery": {
+      "title": "Bakery",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Bakery.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "d4d1913d247ca974c49b5f616de265cf1c028c32c8bb3aa9424343e55e33add1",
+      "file": "bakery.glb"
+    },
+    "dairy": {
+      "title": "Dairy Room",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Dairy-Room.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "06e9dec789418fea0125bc498a821025c6f47cbfddce36d0e71f8ba0b2201694",
+      "file": "dairy.glb"
+    },
+    "jamshop": {
+      "title": "Preserve Kitchen",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Preserve-Kitchen.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "38fe58f568ed14c982ffcbd305cc7a0485b3906136882573e9ddaac9cde6e1c5",
+      "file": "jamshop.glb"
+    },
+    "loom": {
+      "title": "TextileWorkshop",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/TextileWorkshop.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "ed86a4da0895278484d29647876b12da24ac11a76319a76fa5596367360142fc",
+      "file": "loom.glb"
+    },
+    "lamp": {
+      "title": "Lanterns",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Lanterns.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "4453f283660d1773764891a22a24ebff11d3bfd92ee90f0f84c6139522c8a88d",
+      "file": "lamp.glb"
+    },
+    "bench": {
+      "title": "Benches",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Benches.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "f6b5c4ee6e1e6540937ec4f92c6f51050faaceeb79bd8c1b6eb91634654e21db",
+      "file": "bench.glb"
+    },
+    "fountain": {
+      "title": "Fountain",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Fountain.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "091b6ec3f5797a482976ca7ac1976bbd51eaa7e80c6574250a065c3613362ae9",
+      "file": "fountain.glb"
+    },
+    "windmill": {
+      "title": "meadow windmill",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/haven-meadow/models/meadow_windmill.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "4ae20bf8aa5f055a4253be9ba1145d49f1c31b2c42e4fa99b1d395b06d3c56d3",
+      "file": "windmill.glb"
+    },
+    "scarecrow": {
+      "title": "Scarecrow",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Scarecrow.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "d4e4ebc1cb69a82c8483b504ce1f5ae7d5fa8baeaeeae9d3bcf26af68e19a593",
+      "file": "scarecrow.glb"
+    },
+    "bridge": {
+      "title": "Footbridge",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Footbridge.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "a1bb5278cc1da29e796c4f2bc93debce32d08e1369e7fce1bcaedc9018eb05e5",
+      "file": "bridge.glb"
+    },
+    "sprinkler": {
+      "title": "Sprinkler",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Sprinkler.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "7d02f1ca9379bdb81f6fb6e5414a72335bad29f007cc00fea4e13105cc5a5b62",
+      "file": "sprinkler.glb"
+    },
+    "worker": {
+      "title": "Worker Cabin",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Worker-Cabin.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "e1d9b9fefb31f84130c5fe4c3d7bd57d7c4b2146796222de0857fbc44866ca9b",
+      "file": "worker.glb"
+    },
+    "rock": {
+      "title": "meadow chalk",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/haven-meadow/models/meadow_chalk.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "401c335a0789c7e60b12d073682011671c639c5880ef7d08bd1d9e8b5190368e",
+      "file": "rock.glb"
+    },
+    "corn-young": {
+      "title": "crop corn stage 2 juvenile",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/beach/optimized-glb/crop-corn-stage-2-juvenile.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "595eb142f19a031f032a8f24b1466c74273289129623c3ec787229e0ef131d1d",
+      "file": "corn-young.glb"
+    },
+    "corn-ripe": {
+      "title": "crop corn stage 4 harvest ready",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/beach/optimized-glb/crop-corn-stage-4-harvest-ready.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "e236ad39170fc3abe06b2af9b267847a3e769b61437ba84d02560e472587a438",
+      "file": "corn-ripe.glb"
+    },
+    "pumpkin-young": {
+      "title": "crop pumpkin stage 2 vining",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/beach/optimized-glb/crop-pumpkin-stage-2-vining.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "c1d823f9b0b4df1723534c46fb11cdc7194472e5dcdbb037a833979c56f392ae",
+      "file": "pumpkin-young.glb"
+    },
+    "pumpkin-ripe": {
+      "title": "crop pumpkin stage 4 fruiting",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/beach/optimized-glb/crop-pumpkin-stage-4-fruiting.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "c0bd0cdf5fda3ebad665362afd8df1fa27e9629a35b48859800dbbc4829f382c",
+      "file": "pumpkin-ripe.glb"
+    },
+    "tomato-young": {
+      "title": "crop tomato stage 2 staked young",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/beach/optimized-glb/crop-tomato-stage-2-staked-young.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "a37d5a2e8b52135dfdd9d1f7a03d63819f9a1268fa079bc13ff97cb82e0afeb0",
+      "file": "tomato-young.glb"
+    },
+    "tomato-ripe": {
+      "title": "crop tomato stage 4 fruiting",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/beach/optimized-glb/crop-tomato-stage-4-fruiting.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "2faaeb0a43d562871296808f44366f0a558b5889d16cf30882f9c89dd3ba756e",
+      "file": "tomato-ripe.glb"
+    },
+    "grape-young": {
+      "title": "crop grape vine stage 2 trained young vine",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/beach/optimized-glb/crop-grape-vine-stage-2-trained-young-vine.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "cfecc02aaa4511720d49de1c378b85093a2627aeb241f21f7e365ef184525983",
+      "file": "grape-young.glb"
+    },
+    "grape-ripe": {
+      "title": "crop grape vine stage 4 fruiting",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/beach/optimized-glb/crop-grape-vine-stage-4-fruiting.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "8a0294b3981afc61696c70cfdb8aa46bfc34568938b6a41b2b89ee494c3be7bc",
+      "file": "grape-ripe.glb"
+    },
+    "potato-young": {
+      "title": "crop carrot stage 1 sprout",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/beach/optimized-glb/crop-carrot-stage-1-sprout.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "63ea6b8cc690ec472da096aec197c0f505abc66903a0ef3aed2b5c9c74acd23b",
+      "file": "potato-young.glb",
+      "notes": "Carrot sprout foliage stands in for the young potato plant."
+    },
+    "potato-ripe": {
+      "title": "crop carrot stage 3 root bulking",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/beach/optimized-glb/crop-carrot-stage-3-root-bulking.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "65bb764d040854549ab08f82a1c53cc743db0cadeeea74a50da23cf25e391631",
+      "file": "potato-ripe.glb",
+      "notes": "Carrot foliage from the root-bulking stage stands in for the mature potato plant."
+    },
+    "cow": {
+      "title": "Red cow",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/fantasy-studio/models/dressing/animals.js",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "bf737be803c0cd5e8dd7e577ff4ba5b8c10210694f98110da59ef2142398f7f8",
+      "file": "cow.glb",
+      "notes": "Upstream red cow model and motion factory. Exported to GLB with batched meshes and sampled idle and walk clips."
+    },
+    "sheep": {
+      "title": "Sheep",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/fantasy-studio/models/dressing/animals.js",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "2a30fad5df8594b6ac71b6459d3ff51b0bd3b7e9852b03cc30d22f728b6a5604",
+      "file": "sheep.glb",
+      "notes": "Upstream sheep model and motion factory. Exported to GLB with batched meshes and sampled idle and walk clips."
+    },
+    "pig": {
+      "title": "Wild boar",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/fantasy-studio/models/creatures/quadrupeds.js",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "c24148a86c34f13431611840eb6a9e953e498a85a54bf57eb75c3dc91100795a",
+      "file": "pig.glb",
+      "notes": "Upstream boar model factory exported to GLB with its idle and walk clips. Represents pigs in the pigsty."
+    },
+    "mushroom": {
+      "title": "Porcini",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/fantasy-studio/models/forage/mushrooms.js",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "acf9b3cf274c185c7f2351e5b50c973cf309fcb855879a8174b9aa71caa1b2e3",
+      "file": "mushroom.glb",
+      "notes": "Upstream porcini forage model factory exported to GLB with batched meshes."
+    },
+    "wildberry": {
+      "title": "Raspberry bush",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/fantasy-studio/models/forage/bushes.js",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "a40f944c3fc9ddd38c87528d696159aa827e79fc6097aecba9ea2d806f7e7662",
+      "file": "wildberry.glb",
+      "notes": "Upstream raspberry forage model factory exported to GLB with batched meshes."
+    },
+    "duck": {
+      "title": "Duck · female",
+      "source": "https://models.codelove.in/models/bird-duck-female-01/",
+      "download": "https://models.codelove.in/models/bird-duck-female-01.glb",
+      "license": "MIT",
+      "notice": "Microsoft-MIT.txt",
+      "sha256": "0c6fc38e5639bf6ed6f74a9641d96df00f47a53e5461acdb53237605836b5c06",
+      "file": "duck.glb"
+    },
+    "peach-tree": {
+      "title": "crop peach tree stage 4 fruiting",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/beach/optimized-glb/crop-peach-tree-stage-4-fruiting.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "15a97c91c9dd0c68f5f4738390ce27c1706aa2119012a9c3819e654f3f561b51",
+      "file": "peach-tree.glb"
+    },
+    "stonepath": {
+      "title": "Garden paths",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Garden-paths.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "6232cd9ea5b59a485bef50d5fb8b35d2e27d9ef9077281b041918cd71018bd06",
+      "file": "stonepath.glb"
+    },
+    "seasonal": {
+      "title": "Seasonal decorations",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Seasonal-decorations.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "5dfe353ebeda83f78d01ed6253e7decddd902e48f53266073164bf35f67918b9",
+      "file": "seasonal.glb"
+    },
+    "truck": {
+      "title": "Farm Truck",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/collections/farm/infrastructure/optimized-glb/Farm-Truck.glb",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "c5a0c24768dbea3653011ec6cba6d39889ba58538098b99469388c3245670e76",
+      "file": "truck.glb"
+    },
+    "forest-tree": {
+      "title": "Pollard willow",
+      "source": "https://github.com/holokat/game-assets/blob/3d07a13c4c300c5e5b19388f77ae90346b4568d2/site/fantasy-studio/models/dressing/vegetation.js",
+      "license": "MIT",
+      "notice": "HOLokat-MIT.txt",
+      "sha256": "a5494df3fa5cd9efbd8e660c0d5209971e6999fcf82160bf5341728ad856d068",
+      "file": "forest-tree.glb",
+      "notes": "Upstream pollard willow model factory exported to GLB with batched meshes."
+    }
+  }
+}

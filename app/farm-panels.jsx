@@ -1,0 +1,437 @@
+import { useState } from 'react'
+import { signOut } from './actions'
+import { buildings, crops, products, recipes } from '../lib/farm-catalog.mjs'
+import { canExpand, parcelAt, parcelPrice, terrainAt, footprint, PARCEL_SIZE, MAP_SIZE } from '../lib/farm-layout.mjs'
+
+export const productBook = { ...crops, ...products }
+const categories = { farm: '농사', animal: '가축', artisan: '가공', decoration: '장식', utility: '시설' }
+const terrainNames = { tree: '나무', rock: '바위', water: '물', mushroom: '버섯', wildberry: '산딸기', wood: '나뭇가지' }
+const colorChoices = ['#c77b54', '#d7aa55', '#789461', '#678f9d', '#a77590', '#ede0b5']
+const icons = {
+  bag: 'M5 9h14l-1 12H6L5 9Zm3 0V7a4 4 0 0 1 8 0v2m-7 4v2m6-2v2',
+  home: 'm3 11 9-7 9 7m-15-1v10h12V10m-8 10v-5h4v5',
+  settings: 'M10 3h4l.5 2.7 2 .9 2.4-.9 2 3.5-2 1.8v2l2 1.8-2 3.5-2.4-.9-2 .9-.5 2.7h-4l-.5-2.7-2-.9-2.4.9-2-3.5 2-1.8v-2l-2-1.8 2-3.5 2.4.9 2-.9L10 3Z',
+  close: 'm6 6 12 12M18 6 6 18',
+  full: 'M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5',
+  build: 'm4 20 5-5m3-3 3-3m-8-3 4-3 4 1 5 5-4 4-2-2-3 1L7 8V6Z',
+  collect: 'M5 15h14l-2 6H7l-2-6Zm2 0 3-5m7 5-3-5M12 3v5M4 6l2 3m14-3-2 3',
+  map: 'm3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2V6Zm6-2v14m6-12v14',
+  orders: 'M6 4h12v17H6V4Zm3 5h6m-6 4h6m-6 4h4',
+  photo: 'M3 7h4l2-3h6l2 3h4v13H3V7Z',
+  share: 'M12 14V3m-4 4 4-4 4 4m-9 4H4v10h16V11h-3',
+  help: 'M9 9a3 3 0 1 1 5 2.2c-1.4.8-2 1.7-2 2.8m0 3h.01',
+  undo: 'M5 9h9a5 5 0 0 1 0 10h-2M9 5 5 9l4 4',
+  rotate: 'M20 8v5h-5m5 0a8 8 0 1 0-2 5',
+}
+const statsLabels = {
+  planted: '심은 씨앗', harvested: '수확한 작물', collected: '모은 생산물', sold: '판매한 상품',
+  built: '배치한 시설', expanded: '개간한 구역', fished: '잡은 물고기', foraged: '채집한 재료',
+  crafted: '만든 가공품', orders: '완료한 주문', visits: '방문 기록',
+}
+
+export function Icon({ name }) {
+  return (
+    <svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d={icons[name]} />
+      {name === 'settings' && <circle cx="12" cy="12" r="3" />}
+      {name === 'photo' && <circle cx="12" cy="13" r="3.4" />}
+      {name === 'help' && <circle cx="12" cy="12" r="9" />}
+    </svg>
+  )
+}
+
+export function FarmButton({ icon, children, active, className = '', ...props }) {
+  return <button type="button" className={'farm-button ' + className} aria-pressed={active} {...props}>
+    {icon && <Icon name={icon} />}{children && <span>{children}</span>}
+  </button>
+}
+
+export function remainingTime(ms) {
+  const seconds = Math.max(0, Math.ceil(ms / 1000))
+  if (seconds >= 3600) return Math.floor(seconds / 3600) + '시간 ' + Math.floor(seconds % 3600 / 60) + '분'
+  if (seconds >= 60) return Math.floor(seconds / 60) + '분 ' + seconds % 60 + '초'
+  return seconds + '초'
+}
+
+export function objectName(object) {
+  return object.name || buildings[object.kind]?.name || object.kind
+}
+
+export function terrainTileLabel(farm, { x, z }) {
+  const obstacle = !farm.cleared?.includes(x + ',' + z) && terrainAt(x, z).obstacle
+  return terrainNames[obstacle] || '빈 타일'
+}
+
+export function isReady(object, now) {
+  if (object.stored) return false
+  return Boolean(object.crop?.readyAt <= now ||
+    buildings[object.kind]?.product && object.readyAt <= now ||
+    object.queue?.some(job => job.readyAt <= now))
+}
+
+export function FarmMap({ farm, parcel, choose, label = '농장 지도' }) {
+  return <div className="farm-minimap" aria-label={label}>
+    {Array.from({ length: (MAP_SIZE / PARCEL_SIZE) ** 2 }, (_, index) => {
+      const width = MAP_SIZE / PARCEL_SIZE
+      const x = index % width
+      const z = Math.floor(index / width)
+      const key = x + ',' + z
+      const owned = farm.parcels.includes(key)
+      const terrain = terrainAt(x * PARCEL_SIZE + 6, z * PARCEL_SIZE + 6)
+      const name = farm.zoneNames?.[key] || `${x + 1}열 ${z + 1}행`
+      return <button type="button" key={key} className={'farm-parcel ' + (owned ? 'owned ' : '') + terrain.biome}
+        aria-label={name + (owned ? ' 농지' : canExpand(farm, key) ? ' 열 수 있는 미개간지' : ' 미개간지')} aria-pressed={parcel === key} title={name}
+        onClick={() => choose(key)}>{owned ? '▪' : '＋'}</button>
+    })}
+  </div>
+}
+
+export function TileGrid({ farm, parcel, onPick, target }) {
+  const [focus, setFocus] = useState(0)
+  const keys = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -PARCEL_SIZE, ArrowDown: PARCEL_SIZE }
+  const [px, pz] = parcel.split(',').map(Number)
+  const cells = new Map()
+  const selected = new Set((target?.path ?? (target ? [target] : [])).map(tile => tile.x + ',' + tile.z))
+  for (const object of farm.objects) {
+    if (object.stored) continue
+    for (const cell of footprint(object.kind, object.x, object.z, object.rotation)) {
+      cells.set(cell.x + ',' + cell.z, object)
+    }
+  }
+  return <div className="farm-cell-scroll"><div className="farm-cell-grid" aria-label="농지 타일 선택" style={{ '--grid-size': PARCEL_SIZE }}>
+    {Array.from({ length: PARCEL_SIZE ** 2 }, (_, index) => {
+      const x = px * PARCEL_SIZE + index % PARCEL_SIZE
+      const z = pz * PARCEL_SIZE + Math.floor(index / PARCEL_SIZE)
+      const key = x + ',' + z
+      const terrain = terrainAt(x, z)
+      const cleared = farm.cleared?.includes(key)
+      const obstacle = !cleared && terrain.obstacle
+      const forage = !cleared && terrain.forage
+      const object = cells.get(key)
+      const label = object ? objectName(object) : terrainNames[obstacle || forage] || '빈 타일'
+      return <button type="button" key={key} className={'farm-cell ' + (object ? 'occupied' : obstacle || terrain.biome)}
+        aria-label={label} title={label}
+        tabIndex={focus === index ? 0 : -1}
+        onFocus={() => setFocus(index)}
+        aria-pressed={selected.has(key)}
+        onClick={() => onPick({ x, z, id: object?.id })}
+        onKeyDown={event => {
+          if (!keys[event.key]) return
+          event.preventDefault()
+          event.stopPropagation()
+          const next = index + keys[event.key]
+          event.currentTarget.parentElement.children[next]?.focus()
+        }}>
+        {object && object.x === x && object.z === z ? buildings[object.kind]?.icon || '▪' :
+          obstacle === 'tree' ? '♠' : obstacle === 'rock' ? '◆' : obstacle === 'water' ? '≈' : forage && products[forage]?.icon || ''}
+      </button>
+    })}
+  </div></div>
+}
+
+export function Shop({ farm, pending, choose, restore }) {
+  const [category, setCategory] = useState('farm')
+  return <>
+    <div className="farm-categories" aria-label="시설 종류">
+      {Object.entries({ ...categories, stored: '보관함' }).map(([id, name]) =>
+        <FarmButton key={id} active={id === category} onClick={() => setCategory(id)}>{name}</FarmButton>)}
+    </div>
+    {category === 'stored' ?
+      <div className="farm-catalog">
+        {farm.objects.filter(object => object.stored).map(object => <button className="farm-item" type="button" key={object.id} disabled={pending}
+          onClick={() => restore(object)}><span aria-hidden="true">{buildings[object.kind]?.icon || '📦'}</span><strong>{objectName(object)}</strong><small>다시 배치</small></button>)}
+        {!farm.objects.some(object => object.stored) && <p>농장에서 보관한 시설을 여기에 보관해요.</p>}
+      </div> :
+      <div className="farm-catalog">
+        {Object.entries(buildings).filter(([, item]) => item.category === category && item.price > 0).map(([id, item]) => {
+          const locked = farm.level < item.level
+          return <button className="farm-item" type="button" key={id} disabled={pending || locked || farm.coins < item.price}
+            onClick={() => choose(id)}>
+            <span aria-hidden="true">{item.icon || '▪'}</span><strong>{item.name}</strong>
+            <small>{locked ? 'Lv. ' + item.level : '✦ ' + item.price.toLocaleString('ko-KR')} · {item.size.join('×')}</small>
+          </button>
+        })}
+      </div>}
+  </>
+}
+
+export function Seeds({ farm, pending, ids, act }) {
+  const favorites = farm.favorites ?? []
+  const seeds = Object.entries(crops).sort(([a], [b]) => Number(favorites.includes(b)) - Number(favorites.includes(a)))
+  return <>
+    <p>{ids.length === 1 ? '심을 씨앗을 고르세요.' : '빈 밭 ' + ids.length + '칸에 같은 씨앗을 심어요.'}</p>
+    <div className="farm-catalog farm-seeds">
+      {seeds.map(([id, crop]) => {
+        const locked = farm.level < crop.level
+        return <div className="farm-seed" key={id}>
+          <button className="farm-item" type="button" disabled={pending || locked || farm.coins < crop.seed * ids.length}
+            onClick={() => act({ type: 'plant', ids, crop: id }, crop.name + ' 씨앗을 심었어요.')}>
+            <span aria-hidden="true">{crop.icon || '🌱'}</span><strong>{crop.name}</strong>
+            <small>{locked ? 'Lv. ' + crop.level : '✦ ' + (crop.seed * ids.length).toLocaleString('ko-KR')}</small>
+            <small>{remainingTime(crop.seconds * 1000)}</small>
+          </button>
+          <button className="farm-favorite" type="button" aria-label={crop.name + ' 즐겨찾기'} aria-pressed={favorites.includes(id)}
+            disabled={pending} onClick={() => act({ type: 'favorite', crop: id })}>{favorites.includes(id) ? '★' : '☆'}</button>
+        </div>
+      })}
+    </div>
+  </>
+}
+
+export function Inventory({ farm, pending, act }) {
+  const items = Object.entries(farm.inventory).filter(([id, count]) => count > 0 && productBook[id])
+  const sale = items.reduce((sum, [id, count]) => sum + count * productBook[id].price, 0)
+  if (!items.length) return <p>수확하거나 만든 상품이 여기에 담겨요.</p>
+  return <>
+    <ul className="farm-list">
+      {items.map(([id, count]) => {
+        const item = productBook[id]
+        return <li key={id}>
+          <span aria-hidden="true">{item.icon || '•'}</span>
+          <span><strong>{item.name} ×{count}</strong><small>개당 ✦ {item.price}</small></span>
+          <div className="farm-item-actions">
+            <FarmButton disabled={pending} onClick={() => act({ type: 'sell', item: id, quantity: 1 }, item.name + ' 1개를 팔았어요.')}>1개</FarmButton>
+            {count > 1 && <FarmButton disabled={pending} onClick={() => act({ type: 'sell', item: id, quantity: count }, item.name + ' 전부 팔았어요.')}>전부</FarmButton>}
+          </div>
+        </li>
+      })}
+    </ul>
+    <button type="button" className="primary" disabled={pending || !sale} onClick={() => act({ type: 'sell' }, '창고의 상품을 팔았어요.')}>모두 팔기 · ✦ {sale.toLocaleString('ko-KR')}</button>
+  </>
+}
+
+export function Orders({ farm, pending, act }) {
+  if (!farm.orders?.length) return <p>준비된 주문이 없어요.</p>
+  return <ul className="farm-list farm-orders">
+    {farm.orders.map(order => {
+      const missing = Object.entries(order.items).some(([id, amount]) => (farm.inventory[id] || 0) + (order.shared?.[id] || 0) < amount)
+      return <li key={order.id}>
+        <div><strong>{order.name}</strong><small>{Object.entries(order.items).map(([id, count]) => {
+          const current = (farm.inventory[id] || 0) + (order.shared?.[id] || 0)
+          return `${productBook[id]?.name || id} ${Math.min(current, count)}/${count}`
+        }).join(' · ')}</small></div>
+        <FarmButton disabled={pending || missing || order.done}
+          onClick={() => act({ type: 'order', id: order.id }, '주문을 전달했어요.')}>{order.done ? '완료' : '납품 · ✦ ' + order.reward}</FarmButton>
+      </li>
+    })}
+  </ul>
+}
+
+export function Progress({ farm }) {
+  const discovery = farm.discovered ?? []
+  const stats = Object.entries(farm.stats ?? {}).filter(([key, value]) => statsLabels[key] && typeof value === 'number')
+  const achievements = [
+    ['첫 수확', 'harvested', 1], ['넓어진 농장', 'expanded', 4], ['든든한 목장', 'collected', 20],
+    ['공방 장인', 'crafted', 10], ['낚시꾼', 'fished', 3], ['숲의 친구', 'foraged', 5], ['단골 배달원', 'orders', 5],
+  ]
+  const livestock = Object.entries(buildings).filter(([, item]) => item.category === 'animal')
+  return <>
+    <div className="farm-progress"><strong>Lv. {farm.level}</strong><progress max="25" value={farm.xp % 25} aria-label="다음 레벨까지 경험치" /><span>{farm.xp % 25} / 25 XP</span></div>
+    {stats.length > 0 && <dl className="farm-stats">{stats.map(([key, value]) => <div key={key}><dt>{statsLabels[key]}</dt><dd>{value.toLocaleString('ko-KR')}</dd></div>)}</dl>}
+    <h3>농장 업적</h3>
+    <ul className="farm-discovery">
+      {achievements.map(([name, stat, target]) => {
+        const progress = Math.min(farm.stats?.[stat] ?? 0, target)
+        return <li key={stat} className={progress === target ? 'found' : ''}>{name} · {progress}/{target}</li>
+      })}
+    </ul>
+    <h3>가축 도감</h3>
+    <ul className="farm-discovery">
+      {livestock.map(([kind, item]) => {
+        const seen = discovery.includes(item.product) || farm.objects.some(object => object.kind === kind)
+        return <li key={kind} className={seen ? 'found' : ''}>{item.icon} {item.name} · {seen ? '발견' : '미발견'}</li>
+      })}
+    </ul>
+    <h3>발견 도감 <small>{discovery.length} / {Object.keys(productBook).length}</small></h3>
+    <ul className="farm-discovery">
+      {Object.entries(productBook).map(([id, item]) => <li key={id} className={discovery.includes(id) ? 'found' : ''}>
+        <span aria-hidden="true">{discovery.includes(id) ? item.icon || '✦' : '·'}</span>{discovery.includes(id) ? item.name : '미발견'}
+      </li>)}
+    </ul>
+  </>
+}
+
+function ObjectRecipes({ object, farm, now, pending, act }) {
+  const available = Object.entries(recipes).filter(([, recipe]) => recipe.building === object.kind)
+  if (!available.length) return null
+  const queue = object.queue ?? []
+  return <>
+    <p>{queue.length ? '작업 대기열 · ' + queue.length + ' / 8' : '만들 상품을 고르세요.'}</p>
+    {queue.length > 0 && <ul className="farm-list">
+      {queue.map((job, index) => <li key={index}><strong>{recipes[job.recipe]?.name || job.recipe}</strong>
+        <small>{job.readyAt <= now ? '완료' : remainingTime(job.readyAt - now)}</small></li>)}
+    </ul>}
+    <ul className="farm-list">
+      {available.map(([id, recipe]) => {
+        const limit = Math.min(8 - queue.length, ...Object.entries(recipe.inputs).map(([item, amount]) => Math.floor((farm.inventory[item] || 0) / amount)))
+        return <li key={id}><div><strong>{recipe.name}</strong>
+          <small>{Object.entries(recipe.inputs).map(([item, amount]) => (productBook[item]?.name || item) + ' ×' + amount).join(' · ')} · {remainingTime(recipe.seconds * 1000)}</small>
+        </div><form className="farm-quantity" onSubmit={event => {
+          event.preventDefault()
+          const quantity = Number(new FormData(event.currentTarget).get('quantity')) || 1
+          act({ type: 'enqueue', id: object.id, recipe: id, quantity }, '가공을 시작했어요.')
+        }}>
+          {limit > 1 && <input key={limit} type="number" name="quantity" aria-label={recipe.name + ' 작업 수량'} min="1" max={limit} defaultValue="1" required />}
+          <button className="farm-button" disabled={pending || limit < 1}>만들기</button>
+        </form></li>
+      })}
+    </ul>
+  </>
+}
+
+export function ObjectPanel({ object, farm, now, pending, visitor, act, edit, move, store }) {
+  const [customize, setCustomize] = useState(false)
+  const [animalNumber, setAnimalNumber] = useState(1)
+  const item = buildings[object.kind]
+  const ready = isReady(object, now)
+  if (!item) return null
+  const animal = item.category === 'animal'
+  const fishAt = farm.cooldowns?.['fish:' + object.id] ?? 0
+  const upgradePrice = Math.max(12, item.price) * object.level
+  if (visitor) return <p>{item.icon} {item.name} · Lv. {object.level || 1}</p>
+  if (object.kind === 'market' && !edit) return <Inventory farm={farm} pending={pending} act={act} />
+  return <>
+    {['plot', 'greenhouse'].includes(object.kind) && !object.crop && !edit &&
+      <Seeds farm={farm} pending={pending} ids={[object.id]} act={act} />}
+    {object.crop && <p><strong>{crops[object.crop.kind]?.name}</strong> · {ready ? '수확할 수 있어요.' : remainingTime(object.crop.readyAt - now) + ' 뒤에 수확할 수 있어요.'}</p>}
+    {item.product && <p>{productBook[item.product]?.name} · {ready ? '모을 수 있어요.' : object.readyAt ? remainingTime(object.readyAt - now) + ' 남았어요.' : '준비 중'}</p>}
+    {ready && <button type="button" className="primary" disabled={pending}
+      onClick={() => act({ type: 'collect', id: object.id }, '창고에 담았어요.')}>{object.crop ? '수확하기' : '생산물 받기'}</button>}
+    {!edit && <ObjectRecipes object={object} farm={farm} now={now} pending={pending} act={act} />}
+    {!edit && (animal || object.kind === 'pond') && <div className="farm-actions">
+      {animal && <>
+        <FarmButton disabled={pending} onClick={() => act({ type: 'pet', id: object.id }, '가축과 인사했어요.')}>쓰다듬기</FarmButton>
+        <FarmButton disabled={pending || !farm.inventory.carrot || ready || object.fedAt > now - 60000}
+          onClick={() => act({ type: 'feed', id: object.id }, '먹이를 줬어요.')}>먹이 주기 · 당근 1개</FarmButton>
+      </>}
+      {['pond', 'duckpond'].includes(object.kind) && <FarmButton disabled={pending || fishAt > now}
+        onClick={() => act({ type: 'fish', id: object.id }, '물고기를 잡았어요.')}>{fishAt > now ? '낚시까지 ' + remainingTime(fishAt - now) : '낚시'}</FarmButton>}
+    </div>}
+    {!edit && item.animalModel && <form className="farm-inline-form" onSubmit={event => {
+      event.preventDefault()
+      act({ type: 'renameAnimal', id: object.id, animal: animalNumber,
+        name: new FormData(event.currentTarget).get('name') }, '가축 이름을 저장했어요.')
+    }}>
+      <label><span>가축 선택</span><select value={animalNumber} onChange={event => setAnimalNumber(Number(event.target.value))}>
+        {Array.from({ length: object.level }, (_, index) => index + 1).map(number =>
+          <option key={number} value={number}>{object.animalNames?.[number] || number + '번 가축'}</option>)}
+      </select></label>
+      <label><span>가축 이름</span><input key={animalNumber} name="name" maxLength="20" defaultValue={object.animalNames?.[animalNumber] || ''} required /></label>
+      <button className="primary" disabled={pending}>이름 저장</button>
+    </form>}
+    {edit && <div className="farm-actions">
+      <FarmButton disabled={pending} onClick={move}>옮기기</FarmButton>
+      <FarmButton disabled={pending} onClick={store}>보관</FarmButton>
+      <FarmButton disabled={pending} active={customize} onClick={() => setCustomize(!customize)}>꾸미기</FarmButton>
+      {animal && <FarmButton disabled={pending || object.level >= 5 || farm.coins < upgradePrice}
+        onClick={() => act({ type: 'upgrade', id: object.id }, '축사를 업그레이드했어요.')}>
+        {object.level >= 5 ? '최대 레벨' : '증축 · ✦ ' + upgradePrice}</FarmButton>}
+    </div>}
+    {edit && customize && <>
+      <form className="farm-inline-form" onSubmit={event => {
+        event.preventDefault()
+        const name = new FormData(event.currentTarget).get('name')
+        act({ type: 'rename', id: object.id, name }, '이름을 저장했어요.')
+      }}><label><span>시설 이름</span><input name="name" maxLength="24" defaultValue={object.name || ''} placeholder={item.name} required /></label>
+        <button className="primary" disabled={pending}>저장</button>
+      </form>
+      <div className="farm-colors" aria-label="시설 색상">
+        {colorChoices.map((color, index) => <button key={color} type="button" disabled={pending} aria-label={`색상 ${index + 1}`}
+          aria-pressed={object.color === color} style={{ backgroundColor: color }} onClick={() => act({ type: 'color', id: object.id, color }, '색상을 바꿨어요.')} />)}
+      </div>
+    </>}
+  </>
+}
+
+export function Settings({ farm, pending, visitor, act, scene, full }) {
+  const settings = farm.settings ?? {}
+  const set = (key, value) => act({ type: 'setSettings', settings: { [key]: value } }, '설정을 저장했어요.')
+  return <div className="farm-settings">
+    {!visitor && <>
+      <label className="farm-setting"><span>화면 품질</span><select disabled={pending} value={settings.quality ?? 'high'} onChange={event => set('quality', event.target.value)}>
+        <option value="high">높음</option><option value="low">낮음</option>
+      </select></label>
+      {Object.entries({ motion: '움직임 효과', weather: '날씨 효과', audio: '효과음', ambient: '농장 환경음', music: '배경 음악' }).map(([key, name]) =>
+        <label key={key} className="farm-setting"><span>{name}</span><input type="checkbox" disabled={pending}
+          checked={Boolean(settings[key])} onChange={event => set(key, event.target.checked)} /></label>)}
+      <h3>카메라 위치</h3>
+      {['1', '2', '3'].map(slot => <div className="farm-setting" key={slot}>
+        <strong>위치 {slot}</strong>
+        <div className="farm-item-actions">
+          <FarmButton disabled={pending || !scene} onClick={() => act({ type: 'camera', slot, view: scene.getView() }, '카메라 위치를 저장했어요.')}>저장</FarmButton>
+          <FarmButton disabled={!scene || !farm.views?.[slot]} onClick={() => scene.setView(farm.views[slot])}>이동</FarmButton>
+        </div>
+      </div>)}
+    </>}
+    {full && <FarmButton icon="full" onClick={full}>전체 화면 전환</FarmButton>}
+    <a href="/models/sources.json" target="_blank" rel="noreferrer">3D 모델 출처와 라이선스 ↗</a>
+    {!visitor && <form action={signOut}><button type="submit" className="primary">로그아웃</button></form>}
+  </div>
+}
+
+export function ParcelPanel({ farm, parcel, pending, visitor, act, empty, seed, grid, toggleGrid }) {
+  const owned = farm.parcels.includes(parcel)
+  const [x, z] = parcel.split(',').map(Number)
+  const adjacent = canExpand(farm, parcel)
+  const price = parcelPrice(farm)
+  const biome = terrainAt(x * PARCEL_SIZE + 6, z * PARCEL_SIZE + 6).biome
+  const ready = farm.objects.filter(object => !object.stored && parcelAt(object.x, object.z) === parcel && isReady(object, farm.now))
+  return <>
+    <p>{({ meadow: '초지', woods: '숲', lakeside: '물가' })[biome]} · {PARCEL_SIZE} × {PARCEL_SIZE} 타일</p>
+    {!visitor && owned && <>
+      <form className="farm-inline-form" onSubmit={event => {
+        event.preventDefault()
+        const name = new FormData(event.currentTarget).get('name')
+        act({ type: 'zone', parcel, name }, '구역 이름을 저장했어요.')
+      }}>
+        <label><span>구역 이름</span><input name="name" defaultValue={farm.zoneNames?.[parcel] ?? ''} maxLength="20" placeholder="구역 이름" required /></label>
+        <button className="primary" disabled={pending}>저장</button>
+      </form>
+      <div className="farm-actions">
+        <FarmButton disabled={pending || !empty.length} onClick={() => seed(empty)}>빈 밭에 심기</FarmButton>
+        <FarmButton disabled={pending || !ready.length}
+          onClick={() => act({ type: 'collect', parcel }, '이 구역의 생산물을 모았어요.')}>이 구역 수확</FarmButton>
+      </div>
+    </>}
+    {!visitor && !owned && <>
+      <p>{adjacent ? '농지를 넓혀 새 시설을 놓을 수 있어요.' : '보유한 농지와 맞닿은 구역부터 열 수 있어요.'}</p>
+      <button className="primary" type="button" disabled={pending || !adjacent || farm.coins < price}
+        onClick={() => act({ type: 'expand', parcel }, '새 구역을 열었어요.')}>구역 열기 · ✦ {price}</button>
+    </>}
+    {toggleGrid && <FarmButton icon="map" active={grid} onClick={toggleGrid}>{grid ? '3D 화면' : '타일로 보기'}</FarmButton>}
+  </>
+}
+
+export function TerrainPanel({ farm, tile, pending, act, visitor }) {
+  const terrain = terrainAt(tile.x, tile.z)
+  const key = tile.x + ',' + tile.z
+  const cleared = farm.cleared?.includes(key)
+  const forageAt = farm.cooldowns?.['forage:' + key] ?? 0
+  const fishAt = farm.cooldowns?.['fish:' + key] ?? 0
+  if (cleared || !terrain.obstacle && !terrain.forage) return <p>시설을 놓을 수 있는 빈 타일이에요.</p>
+  return <>
+    <p>{terrainNames[terrain.obstacle] || terrainNames[terrain.forage]}</p>
+    {!visitor && <div className="farm-actions">
+      {terrain.forage && <FarmButton disabled={pending || forageAt > farm.now}
+        onClick={() => act({ type: 'forage', x: tile.x, z: tile.z }, '채집물을 창고에 담았어요.')}>{forageAt > farm.now ? '채집까지 ' + remainingTime(forageAt - farm.now) : '채집하기'}</FarmButton>}
+      {terrain.obstacle === 'water' && <FarmButton disabled={pending || fishAt > farm.now}
+        onClick={() => act({ type: 'fish', x: tile.x, z: tile.z }, '물고기를 잡았어요.')}>{fishAt > farm.now ? '낚시까지 ' + remainingTime(fishAt - farm.now) : '낚시'}</FarmButton>}
+      {['tree', 'rock'].includes(terrain.obstacle) && <FarmButton disabled={pending}
+        onClick={() => act({ type: 'clear', x: tile.x, z: tile.z }, '장애물을 정리했어요.')}>정리하기</FarmButton>}
+    </div>}
+  </>
+}
+
+export function Help() {
+  return <div className="farm-help">
+    <p>빈 밭에 씨앗을 심고, 시간이 지나면 수확하세요. 창고에서 팔거나 주문을 채워 시설을 늘릴 수 있어요.</p>
+    <dl>
+      <div><dt>시점 이동</dt><dd>드래그 · 방향키 · 두 손가락</dd></div>
+      <div><dt>시점 회전</dt><dd>우클릭 드래그 · Q / E</dd></div>
+      <div><dt>확대 / 축소</dt><dd>휠 · 두 손가락 오므리기</dd></div>
+      <div><dt>농장 편집</dt><dd>B · 배치 회전 R · 확정 Enter</dd></div>
+      <div><dt>이전 배치 복구</dt><dd>Ctrl / ⌘ + Z</dd></div>
+      <div><dt>창 닫기</dt><dd>Esc</dd></div>
+    </dl>
+  </div>
+}
