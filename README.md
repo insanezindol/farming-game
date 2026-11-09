@@ -24,7 +24,7 @@
 
 밭과 축사에는 생산 시간이 따로 흐릅니다. 창고에서 상품을 팔고, 작업장에 가공을 예약하거나 주문서로 납품합니다. **농장 방문** 메뉴에서 초대 링크를 열고 닫을 수 있습니다. 로그인한 방문자는 방명록, 선물, 주문 지원을 이용합니다.
 
-모든 3D 모델은 MIT로 공개된 파일입니다. [모델별 원본과 SHA-256](public/models/sources.json), [Holokat](public/models/HOLokat-MIT.txt), [CropForge](public/models/CropForge-MIT.txt), [Microsoft](public/models/Microsoft-MIT.txt)의 라이선스 고지를 모델과 함께 보관합니다. 로그인 배경은 이 모델로 구성한 장면을 캡처한 이미지입니다. Chrome, Edge 등 WebGL 2를 지원하는 브라우저에서 3D 화면을 열 수 있습니다.
+모든 3D 모델은 MIT로 공개된 파일입니다. [모델별 원본과 SHA-256](public/models/sources.json), [Holokat](public/models/HOLokat-MIT.txt), [CropForge](public/models/CropForge-MIT.txt), [Microsoft](public/models/Microsoft-MIT.txt)의 라이선스 고지를 모델과 함께 보관합니다. 제목·버튼 글꼴은 SIL Open Font License 1.1로 공개된 [Jua](https://fonts.google.com/specimen/Jua)(Woowahan Brothers)를 `next/font`로 불러옵니다. 로그인 배경은 이 모델로 구성한 장면을 캡처한 이미지입니다. Chrome, Edge 등 WebGL 2를 지원하는 브라우저에서 3D 화면을 열 수 있습니다.
 
 ## 데이터베이스와 검사
 

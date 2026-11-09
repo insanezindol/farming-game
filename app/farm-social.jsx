@@ -38,6 +38,8 @@ function GuestSocial({ farm, scene }) {
   return (
     <div className="farm-social">
       <p><a href="/">내 농장으로</a></p>
+      {farm.charm && <p className="farm-charm-badge">🌸 {farm.charm.name} · 매력 {farm.charm.score}</p>}
+      {farm.social?.helpers?.length > 0 && <p><small>품앗이 이웃: {farm.social.helpers.slice(0, 5).map(entry => entry.handle + ' ×' + entry.count).join(', ')}</small></p>}
       {Object.keys(farm.views ?? {}).length > 0 && <>
         <h3>추천 산책 지점</h3>
         <div className="farm-actions">{Object.entries(farm.views).map(([slot, spot]) =>
@@ -86,6 +88,27 @@ function GuestSocial({ farm, scene }) {
   )
 }
 
+// 주문을 도와준 이웃에게 답례를 맡겨 두면, 그 이웃이 다음에 들를 때 받는다
+function Helpers({ farm, act }) {
+  const helpers = farm.social?.helpers ?? []
+  const items = Object.keys(farm.inventory ?? {}).filter(item => farm.inventory[item] > 0 && (products[item] ?? crops[item]))
+  if (!helpers.length) return <p>주문을 도와준 이웃이 생기면 여기에서 답례를 보낼 수 있어요.</p>
+  return <ul className="social-records">
+    {helpers.map(({ handle, count }) => {
+      const waiting = farm.social?.thanks?.find(entry => entry.to === handle)
+      return <li key={handle}><strong>{handle}</strong> · 도움 {count}번
+        {waiting ? <small> · {productName(waiting.item)} 답례가 기다리는 중</small> : items.length > 0 && <form className="farm-inline-form" onSubmit={event => {
+          event.preventDefault()
+          act({ type: 'thank', handle, item: new FormData(event.currentTarget).get('item') }, '답례를 맡겼어요. 이웃이 들르면 전해져요.')
+        }}>
+          <select name="item" aria-label={handle + '에게 보낼 답례'}>{items.map(item => <option key={item} value={item}>{productName(item)}</option>)}</select>
+          <button type="submit">답례 보내기</button>
+        </form>}
+      </li>
+    })}
+  </ul>
+}
+
 export function FarmSocial({ farm, visitor, act, scene }) {
   const [copied, setCopied] = useState('')
   if (visitor) return <GuestSocial farm={farm} scene={scene} />
@@ -115,8 +138,10 @@ export function FarmSocial({ farm, visitor, act, scene }) {
       <p><small>설정에서 저장한 카메라 위치가 방문자에게 추천 산책 지점으로 보여요.</small></p>
       <h3>방명록과 구역 감상</h3>
       <Records rows={farm.social?.messages} render={row => messageText(farm, row)} empty="아직 남겨진 글이 없어요." />
+      <h3>품앗이 이웃과 답례</h3>
+      <Helpers farm={farm} act={act} />
       <h3>받은 선물</h3>
-      <Records rows={farm.social?.gifts} render={row => <><strong>{row.from}</strong> · {productName(row.item)}</>} empty="아직 선물이 없어요." />
+      <Records rows={farm.social?.gifts} render={row => <><strong>{row.from}</strong> · {productName(row.item)}{row.thanks ? ' · 답례' : ''}</>} empty="아직 선물이 없어요." />
     </div>
   )
 }

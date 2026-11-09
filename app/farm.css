@@ -614,3 +614,205 @@
   .farm-summary, .farm-guide { top: calc(var(--top-inset) + 52px); max-width: min(330px, 46vw); }
   .farm-guide p { display: none; }
 }
+
+/* ───── 아기자기한 스타일: 둥글고 말랑한 UI ───── */
+.farm-stage {
+  --farm-panel: #fffaf0;
+  --farm-text: #3f4a3a;
+  --farm-muted: #6a6f5c;
+  --farm-line: #f1e3c4;
+  --farm-cute: var(--font-cute), 'Farm Sans', 'Apple SD Gothic Neo', system-ui, sans-serif;
+  --farm-shadow: 0 4px 0 #e8cfa4, 0 10px 26px #7a8f5a33;
+  background: radial-gradient(ellipse at 48% 40%, #e6f5c9, #a9d98b);
+}
+.farm-stage h1, .farm-stage h2, .farm-stage h3, .farm-button, .farm-stage button.primary, .coin-pouch,
+.map-target > span, .farm-toast, .farm-quick, .farm-summary-text, .farm-guide strong, .farm-peddler-tag {
+  font-family: var(--farm-cute);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.farm-identity, .coin-pouch, .farm-sheet, .farm-edit, .farm-loading, .farm-summary, .farm-guide {
+  border: 2.5px solid #fff3d6;
+}
+.farm-identity { border-radius: 22px; }
+.farm-emblem { border-radius: 14px; background: #ffe7a8; color: #b4632e; }
+.farm-sheet { border-radius: 24px; }
+.farm-edit { border-radius: 20px; }
+.farm-loading { border-radius: 999px; }
+.farm-button {
+  border: 2px solid #f3e2bf;
+  border-radius: 14px;
+  background: #fff3d2;
+  box-shadow: 0 3px 0 #ead2a4;
+}
+.farm-button:not(:disabled):active, .farm-stage button.primary:not(:disabled):active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #ead2a4;
+}
+.farm-button[aria-pressed=true] { color: #5a2f14; background: #ff9f7a; border-color: #ffc2a6; box-shadow: 0 3px 0 #e07e5a; }
+.farm-button.farm-square { border-radius: 16px; }
+.farm-hud-right .farm-square, .farm-camera .farm-square, .farm-tool, .farm-photo .farm-button { border-radius: 18px; }
+.farm-tools .farm-button:first-child { background: #ffb27f; border-color: #ffd0ad; color: #5a2f14; box-shadow: 0 3px 0 #e48d58; }
+.farm-tools .farm-button:first-child[aria-pressed=true] { background: #ff8a65; border-color: #ffc0a6; color: #5a2f14; }
+.farm-stage button.primary {
+  border: 2px solid #9ee08b;
+  border-radius: 16px;
+  background: #3b7d3f;
+  color: #fff;
+  box-shadow: 0 4px 0 #2b5f2e;
+}
+.farm-stage button.primary:disabled { background: #d7e8d0; border-color: #e6f2e1; box-shadow: 0 3px 0 #b9cfb1; color: #4d5c48; }
+.farm-toast { border-radius: 999px; padding: 8px 16px; background: #3d6f34f5; box-shadow: 0 4px 14px #3c5a2f40; }
+.farm-toast.error { background: #a8432ff5; }
+
+/* 코인: 숫자가 또르르, +N이 떠오른다 */
+.coin-pouch { position: relative; background: #fff1c2; color: #8a5414; }
+.coin-pouch > span { color: #f2a428; }
+.coin-pop {
+  position: absolute;
+  right: 10px;
+  top: -6px;
+  color: #f08a24;
+  font-size: .95rem;
+  text-shadow: 0 2px 0 #fff, 0 0 6px #fff;
+  pointer-events: none;
+  animation: coin-pop 1.2s ease-out forwards;
+}
+@keyframes coin-pop { from { opacity: 0; transform: translateY(6px) scale(.7); } 20% { opacity: 1; transform: translateY(0) scale(1.15); } to { opacity: 0; transform: translateY(-26px) scale(1); } }
+
+/* 꼬리 달린 말풍선 라벨 */
+.map-target > span {
+  position: relative;
+  padding: 5px 10px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #3f7a37;
+  color: #fff;
+  box-shadow: 0 3px 0 #2d5c27, 0 4px 10px #2e4a2640;
+}
+.map-target > span::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 9px;
+  height: 9px;
+  background: inherit;
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: translateX(-50%) rotate(45deg);
+  border-bottom-right-radius: 3px;
+}
+.map-target.growing > span { background: #fffaf0; color: #5b6b47; box-shadow: 0 3px 0 #e2d2ae, 0 4px 10px #2e4a2633; }
+/* 익은 칸은 아이콘만 (이웃 칸 라벨과 겹치지 않게), 이름은 버튼의 aria-label에 있다 */
+.map-target .ripe-word { display: none; }
+.map-target.ripe > span {
+  width: auto;
+  height: auto;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #ffd45c;
+  border-color: #fff;
+  color: #7a4512;
+  box-shadow: 0 3px 0 #e6a93a, 0 4px 10px #6b4a1240;
+  animation: ripe-bounce 1.6s ease-in-out infinite;
+}
+.map-target.golden > span { background: linear-gradient(135deg, #fff2a8, #ffc53d 55%, #ffe58a); color: #7a4300; box-shadow: 0 3px 0 #d99a1a, 0 0 14px #ffd54f; }
+.map-target.far > span::after, .map-target.passive > span::after { display: none; }
+@keyframes ripe-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+
+/* 가축 감정 말풍선 */
+.farm-mood {
+  position: absolute;
+  transform: translate(-50%, -120%);
+  padding: 2px 7px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #fffaf0;
+  box-shadow: 0 2px 6px #2e4a2633;
+  font-size: .85rem;
+  pointer-events: none;
+  animation: mood-float 2.4s ease-in-out infinite;
+}
+.farm-mood.love { color: #d63a5c; }
+.farm-mood[hidden] { display: none; }
+@keyframes mood-float { 0%, 100% { margin-top: 0; } 50% { margin-top: -4px; } }
+
+/* 떠돌이 상인 */
+.farm-peddler-tag {
+  position: absolute;
+  z-index: 1;
+  transform: translate(-50%, -140%);
+  padding: 6px 12px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #6a4fb8;
+  color: #fff;
+  font-size: .8rem;
+  box-shadow: 0 3px 0 #4e3891, 0 4px 12px #3b2a6640;
+  white-space: nowrap;
+  animation: mood-float 2.8s ease-in-out infinite;
+}
+.farm-peddler, .farm-notes, .farm-charm { margin-top: 12px; padding: 10px 12px; border-radius: 16px; background: #fff3d8; }
+.farm-peddler h3, .farm-notes h3 { margin: 0 0 6px; }
+.farm-peddler p { margin-bottom: 8px; font-size: .84rem; }
+.farm-notes progress, .farm-sets progress { width: 100%; height: 9px; accent-color: #ff9f7a; }
+.farm-charm { display: grid; gap: 2px; background: #ffe9f0; }
+.farm-charm span { color: #9c3f66; font-size: .82rem; }
+.farm-charm-badge { display: inline-block; margin: 6px 0; padding: 4px 10px; border-radius: 999px; background: #ffe0ea; color: #a43d66; }
+.farm-sets { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.farm-sets li { display: grid; gap: 3px; padding: 7px 9px; border-radius: 12px; background: #f6f0da; font-size: .8rem; }
+.farm-sets li.found { background: #e2f5d4; }
+.farm-season-badge { color: #b0401c; font-weight: 800; }
+.farm-friend { color: #bb3460; }
+.farm-hearts { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin: 6px 0; }
+.farm-hearts span { color: #d63a5c; font-size: 1.1rem; letter-spacing: 2px; }
+.farm-hearts small { color: var(--farm-muted); }
+.farm-discovery li, .farm-stats > div { border-radius: 10px; }
+
+/* 레벨업 선물 상자와 낚시 */
+.farm-gift, .farm-fishing {
+  position: absolute;
+  z-index: 6;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #3b4a2e55;
+}
+.farm-gift-card, .farm-fishing {
+  text-align: center;
+}
+.farm-gift-card {
+  width: min(86vw, 320px);
+  display: grid;
+  gap: 10px;
+  padding: 22px 20px;
+  border: 3px solid #fff3d6;
+  border-radius: 28px;
+  background: #fffaf0;
+  box-shadow: var(--farm-shadow);
+  animation: gift-in .35s cubic-bezier(.3, 1.6, .5, 1) both;
+}
+.farm-gift-box { font-size: 3.4rem; line-height: 1; }
+.farm-gift-card:not(.open) .farm-gift-box { animation: gift-wiggle 1.1s ease-in-out infinite; }
+.farm-gift-card.open .farm-gift-box { animation: gift-in .4s cubic-bezier(.3, 1.8, .5, 1) both; }
+@keyframes gift-in { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: scale(1); } }
+@keyframes gift-wiggle { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-9deg); } 40% { transform: rotate(8deg); } 60% { transform: rotate(-4deg); } }
+.farm-fishing { align-content: center; gap: 12px; }
+.farm-fishing > p, .farm-fishing .farm-actions { padding: 8px 14px; border-radius: 999px; background: #fffaf0; justify-content: center; }
+.farm-bobber { display: grid; place-items: center; width: 120px; height: 120px; border: 3px solid #fff; border-radius: 50%; background: #8fd6e0; font-size: 2.6rem; }
+.farm-bobber b { font-size: 1.4rem; font-weight: 400; }
+.farm-bobber.wait span { animation: mood-float 1.4s ease-in-out infinite; }
+.farm-bobber.bite { background: #5fc2d2; animation: bite-shake .25s linear infinite; }
+@keyframes bite-shake { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .map-target.ripe > span, .farm-mood, .farm-peddler-tag, .farm-bobber.wait span, .farm-bobber.bite,
+  .farm-gift-card, .farm-gift-box, .coin-pop { animation: none !important; }
+}
+.farm-stage.calm .map-target.ripe > span, .farm-stage.calm .farm-mood, .farm-stage.calm .farm-peddler-tag,
+.farm-stage.calm .farm-gift-card, .farm-stage.calm .farm-gift-box, .farm-stage.calm .coin-pop { animation: none !important; }
+/* 휴대폰 가로: 둥글어진 버튼이 넓어져서 빠른 도구를 하단 도구 위로 올린다 */
+@media (max-height: 460px) and (orientation: landscape) {
+  .farm-quick { left: auto; right: var(--right-inset); transform: none; bottom: calc(var(--bottom-inset) + 60px); }
+}
