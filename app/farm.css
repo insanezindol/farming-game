@@ -526,3 +526,91 @@
 @media (max-width: 360px) {
   .farm-emblem { display: none; }
 }
+
+/* 수확 가능 표시: 색과 함께 작물 아이콘·글자로 알린다 */
+.map-target.ripe > span { width: auto; height: auto; padding: 3px 8px; border-radius: 999px; }
+.map-group-count { display: none; margin-left: 3px; font-weight: 900; }
+.map-target.far .map-group-count { display: inline; }
+.placement-issue {
+  position: absolute;
+  z-index: 1;
+  transform: translate(-50%, -150%);
+  margin: 0;
+  padding: 4px 8px;
+  border-radius: 7px;
+  background: #773c30;
+  color: #fff4e0;
+  font-size: .74rem;
+  font-weight: 780;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.farm-quick {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: var(--bottom-inset);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px;
+  border-radius: 11px;
+  background: var(--farm-panel);
+  box-shadow: var(--farm-shadow);
+}
+.farm-quick small { max-width: 150px; font-size: .7rem; color: var(--farm-muted); line-height: 1.2; }
+.farm-summary, .farm-guide {
+  position: absolute;
+  z-index: 3;
+  top: calc(var(--top-inset) + 60px);
+  left: var(--left-inset);
+  max-width: min(380px, calc(100% - 2 * var(--left-inset)));
+  border: 1px solid #fff8e3;
+  border-radius: 10px;
+  background: var(--farm-panel);
+  box-shadow: var(--farm-shadow);
+}
+.farm-summary { display: flex; align-items: center; gap: 4px; padding: 4px; }
+.farm-summary-text {
+  flex: 1;
+  min-height: 40px;
+  padding: 4px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--farm-text);
+  font-size: .82rem;
+  font-weight: 760;
+  text-align: left;
+}
+.farm-summary-text small { color: #45623c; font-weight: 800; }
+.farm-guide { padding: 9px 11px; font-size: .8rem; }
+.farm-guide p { margin: 4px 0 6px; color: var(--farm-muted); }
+.farm-guide button { min-height: 32px; padding: 2px 8px; border: 1px solid var(--farm-line); border-radius: 7px; background: #f2eed1; color: var(--farm-text); font-size: .74rem; }
+.farm-toast { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.farm-toast button {
+  pointer-events: auto;
+  min-height: 32px;
+  padding: 2px 9px;
+  border: 1px solid #fff2c9;
+  border-radius: 7px;
+  background: #fff4d8;
+  color: #4a311d;
+  font-size: .76rem;
+  font-weight: 780;
+}
+.farm-photo p { margin: 0; max-width: 220px; padding: 5px 8px; border-radius: 8px; background: #334c31e6; color: #fff7dc; font-size: .72rem; }
+.farm-parcel.has-ready { background: #f2d27e; color: #5f3c14; }
+.farm-uses { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 3px; font-size: .72rem; color: var(--farm-muted); }
+.farm-uses li { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+.farm-uses button { min-height: 30px; padding: 2px 7px; border: 1px solid var(--farm-line); border-radius: 6px; background: #f2eed1; color: var(--farm-text); font-size: .72rem; }
+.farm-order-kind { color: #45623c; font-weight: 800; }
+.farm-goals p { margin: 3px 0; font-size: .8rem; }
+@media (max-width: 620px) {
+  .farm-quick { left: auto; right: var(--right-inset); transform: none; bottom: calc(var(--bottom-inset) + 112px); flex-wrap: wrap; max-width: calc(100% - 2 * var(--right-inset)); justify-content: flex-end; }
+  .farm-quick small { flex-basis: 100%; max-width: none; text-align: right; }
+}
+@media (max-height: 460px) and (orientation: landscape) {
+  .farm-summary, .farm-guide { top: calc(var(--top-inset) + 52px); max-width: min(330px, 46vw); }
+  .farm-guide p { display: none; }
+}

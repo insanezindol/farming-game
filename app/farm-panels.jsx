@@ -46,6 +46,13 @@ export function FarmButton({ icon, children, active, className = '', ...props })
   </button>
 }
 
+// 받침이 있으면 앞 조사, 없으면 뒤 조사. '으로'는 ㄹ 받침 뒤에서 '로'가 된다.
+export function josa(word, withFinal, without) {
+  const code = word.at(-1).charCodeAt(0) - 0xac00
+  const final = code >= 0 && code < 11172 ? code % 28 : 0
+  return word + (final && !(withFinal === '으로' && final === 8) ? withFinal : without)
+}
+
 export function remainingTime(ms) {
   const seconds = Math.max(0, Math.ceil(ms / 1000))
   if (seconds >= 3600) return Math.floor(seconds / 3600) + '시간 ' + Math.floor(seconds % 3600 / 60) + '분'
@@ -69,6 +76,19 @@ export function isReady(object, now) {
     object.queue?.some(job => job.readyAt <= now))
 }
 
+// 구역마다 기억에 남는 이름과 매력 (지형 규칙은 그대로, 설명만 다르다)
+export function zoneCharm(key) {
+  const [x, z] = key.split(',').map(Number)
+  const { biome } = terrainAt(x * PARCEL_SIZE + 6, z * PARCEL_SIZE + 6)
+  if (key === '1,1') return { name: '첫 농터', text: '농가와 판매대가 있는 시작 구역이에요.' }
+  if (biome === 'lakeside') return { name: z === 3 ? '아랫마을 연못가' : '동쪽 연못 옆 빈터', text: '연못에서 낚시를 하고, 나무다리를 놓아 건널 수 있어요. 오리 연못과 잘 어울려요.' }
+  if (biome === 'woods' && x === 0 && z === 0) return { name: '돌담 언덕', text: '바위와 나무가 많아 정리하면 돌과 나뭇가지가 나와요. 돌담을 쌓기 좋아요.' }
+  if (biome === 'woods') return { name: '숲 가장자리', text: '버섯과 산딸기를 채집할 수 있어요. 오래된 팻말이 숲길을 가리켜요.' }
+  if (key === '2,1') return { name: '해 뜨는 동쪽 들판', text: '장애물이 거의 없어 밭을 넓게 펼치기 좋아요. 아침 해가 먼저 닿아요.' }
+  if (key === '1,2') return { name: '남쪽 목초지', text: '평평한 풀밭이라 외양간과 양 우리를 길로 이어 목장을 꾸미기 좋아요.' }
+  return { name: '바람 언덕 꽃밭 터', text: '화단과 벌통을 가까이 두면 꿀이 빨리 차요. 풍차를 세우기 좋은 언덕이에요.' }
+}
+
 export function FarmMap({ farm, parcel, choose, label = '농장 지도' }) {
   return <div className="farm-minimap" aria-label={label}>
     {Array.from({ length: (MAP_SIZE / PARCEL_SIZE) ** 2 }, (_, index) => {
@@ -78,10 +98,12 @@ export function FarmMap({ farm, parcel, choose, label = '농장 지도' }) {
       const key = x + ',' + z
       const owned = farm.parcels.includes(key)
       const terrain = terrainAt(x * PARCEL_SIZE + 6, z * PARCEL_SIZE + 6)
-      const name = farm.zoneNames?.[key] || `${x + 1}열 ${z + 1}행`
-      return <button type="button" key={key} className={'farm-parcel ' + (owned ? 'owned ' : '') + terrain.biome}
-        aria-label={name + (owned ? ' 농지' : canExpand(farm, key) ? ' 열 수 있는 미개간지' : ' 미개간지')} aria-pressed={parcel === key} title={name}
-        onClick={() => choose(key)}>{owned ? '▪' : '＋'}</button>
+      const name = farm.zoneNames?.[key] || zoneCharm(key).name
+      const ready = owned && farm.now ? farm.objects.filter(object => parcelAt(object.x, object.z) === key && isReady(object, farm.now)).length : 0
+      return <button type="button" key={key} className={'farm-parcel ' + (owned ? 'owned ' : '') + (ready ? 'has-ready ' : '') + terrain.biome}
+        aria-label={name + (owned ? ' 농지' + (ready ? ', 수확 가능 ' + ready + '곳' : '') : canExpand(farm, key) ? ' 열 수 있는 미개간지' : ' 미개간지')}
+        aria-pressed={parcel === key} title={name}
+        onClick={() => choose(key)}>{owned ? ready ? '✦' + ready : '▪' : '＋'}</button>
     })}
   </div>
 }
@@ -178,7 +200,26 @@ export function Seeds({ farm, pending, ids, act }) {
   </>
 }
 
-export function Inventory({ farm, pending, act }) {
+// 수확물을 바로 팔지, 가공할지, 가축 간식으로 쓸지 고를 수 있게 쓰임새를 보여 준다
+function ItemUses({ id, farm, openObject }) {
+  const uses = Object.entries(recipes).filter(([, recipe]) => recipe.inputs[id])
+  const feed = ['carrot', 'wheat'].includes(id)
+  if (!uses.length && !feed) return null
+  return <ul className="farm-uses">
+    {uses.map(([key, recipe]) => {
+      const workshop = farm.objects.find(object => !object.stored && object.kind === recipe.building)
+      return <li key={key}>
+        <span>{recipe.name}: {Object.entries(recipe.inputs).map(([item, amount]) => (productBook[item]?.name || item) + ' ' + amount).join(' + ')}
+          {' → '}{productBook[recipe.product]?.name} (✦ {productBook[recipe.product]?.price}) · {remainingTime(recipe.seconds * 1000)}</span>
+        {workshop ? <button type="button" onClick={() => openObject(workshop.id)}>{josa(buildings[recipe.building].name, '으로', '로')} 가기</button>
+          : <small>{buildings[recipe.building].name} 필요 · Lv. {buildings[recipe.building].level}</small>}
+      </li>
+    })}
+    {feed && <li><span>가축 간식: 1개로 남은 생산 시간 20% 단축</span><small>축사를 눌러 주기</small></li>}
+  </ul>
+}
+
+export function Inventory({ farm, pending, act, openObject = () => {} }) {
   const items = Object.entries(farm.inventory).filter(([id, count]) => count > 0 && productBook[id])
   const sale = items.reduce((sum, [id, count]) => sum + count * productBook[id].price, 0)
   if (!items.length) return <p>수확하거나 만든 상품이 여기에 담겨요.</p>
@@ -188,7 +229,8 @@ export function Inventory({ farm, pending, act }) {
         const item = productBook[id]
         return <li key={id}>
           <span aria-hidden="true">{item.icon || '•'}</span>
-          <span><strong>{item.name} ×{count}</strong><small>개당 ✦ {item.price}</small></span>
+          <span><strong>{item.name} ×{count}</strong><small>바로 팔면 개당 ✦ {item.price}</small>
+            <ItemUses id={id} farm={farm} openObject={openObject} /></span>
           <div className="farm-item-actions">
             <FarmButton disabled={pending} onClick={() => act({ type: 'sell', item: id, quantity: 1 }, item.name + ' 1개를 팔았어요.')}>1개</FarmButton>
             {count > 1 && <FarmButton disabled={pending} onClick={() => act({ type: 'sell', item: id, quantity: count }, item.name + ' 전부 팔았어요.')}>전부</FarmButton>}
@@ -200,21 +242,48 @@ export function Inventory({ farm, pending, act }) {
   </>
 }
 
+const orderLabels = { small: '소량 판매', regular: '단골 요청', long: '장기 주문', season: '계절 좌판 · 선택' }
+
+// 당장 살 것과 다음에 열 땅을 실제 가격 규칙 그대로 보여 준다
+function Goals({ farm }) {
+  const fence = buildings.fence.price
+  const land = parcelPrice(farm)
+  const next = Object.values(buildings).filter(item => item.level === farm.level + 1)
+  return <div className="farm-goals">
+    <h3>다음 목표</h3>
+    <p>입구 울타리 10칸 ✦ {fence * 10} {farm.coins >= fence * 10 ? '· 지금 살 수 있어요' : '· ✦ ' + (fence * 10 - farm.coins) + ' 남음'}</p>
+    <p>새 구역 열기 ✦ {land} {farm.coins >= land ? '· 지금 열 수 있어요' : '· ✦ ' + (land - farm.coins) + ' 남음'}</p>
+    {next.length > 0 && <p>Lv. {farm.level + 1}에 열려요: {next.map(item => item.icon + ' ' + item.name).join(', ')}</p>}
+  </div>
+}
+
+function OrderRow({ order, farm, pending, act, canSkip }) {
+  const missing = Object.entries(order.items).some(([id, amount]) => (farm.inventory[id] || 0) + (order.shared?.[id] || 0) < amount)
+  return <li>
+    <div><strong>{order.name}</strong>
+      {order.kind && <small className="farm-order-kind">{orderLabels[order.kind]}</small>}
+      {order.line && <small>“{order.line}”</small>}
+      <small>{Object.entries(order.items).map(([id, count]) => {
+        const current = (farm.inventory[id] || 0) + (order.shared?.[id] || 0)
+        return `${productBook[id]?.name || id} ${Math.min(current, count)}/${count}`
+      }).join(' · ')}</small></div>
+    <div className="farm-item-actions">
+      <FarmButton disabled={pending || missing || order.done}
+        onClick={() => act({ type: 'order', id: order.id }, '주문을 전달했어요. 트럭이 출발해요!')}>{order.done ? '완료' : '납품 · ✦ ' + order.reward}</FarmButton>
+      {canSkip && !order.done && <FarmButton disabled={pending} onClick={() => act({ type: 'skipOrder', id: order.id }, '다른 주문으로 바꿨어요.')}>다른 주문</FarmButton>}
+    </div>
+  </li>
+}
+
 export function Orders({ farm, pending, act }) {
-  if (!farm.orders?.length) return <p>준비된 주문이 없어요.</p>
-  return <ul className="farm-list farm-orders">
-    {farm.orders.map(order => {
-      const missing = Object.entries(order.items).some(([id, amount]) => (farm.inventory[id] || 0) + (order.shared?.[id] || 0) < amount)
-      return <li key={order.id}>
-        <div><strong>{order.name}</strong><small>{Object.entries(order.items).map(([id, count]) => {
-          const current = (farm.inventory[id] || 0) + (order.shared?.[id] || 0)
-          return `${productBook[id]?.name || id} ${Math.min(current, count)}/${count}`
-        }).join(' · ')}</small></div>
-        <FarmButton disabled={pending || missing || order.done}
-          onClick={() => act({ type: 'order', id: order.id }, '주문을 전달했어요.')}>{order.done ? '완료' : '납품 · ✦ ' + order.reward}</FarmButton>
-      </li>
-    })}
-  </ul>
+  return <>
+    {farm.orders?.length ? <ul className="farm-list farm-orders">
+      {farm.orders.map(order => <OrderRow key={order.id} order={order} farm={farm} pending={pending} act={act} canSkip />)}
+      {farm.event && <OrderRow order={farm.event} farm={farm} pending={pending} act={act} />}
+    </ul> : <p>준비된 주문이 없어요.</p>}
+    <p><small>주문은 지금 농장에서 만들 수 있는 것으로만 들어와요. 다른 주문으로 바꾸면 방문자가 보내 준 물건은 창고로 들어와요.</small></p>
+    <Goals farm={farm} />
+  </>
 }
 
 export function Progress({ farm }) {
@@ -301,8 +370,8 @@ export function ObjectPanel({ object, farm, now, pending, visitor, act, edit, mo
     {!edit && (animal || object.kind === 'pond') && <div className="farm-actions">
       {animal && <>
         <FarmButton disabled={pending} onClick={() => act({ type: 'pet', id: object.id }, '가축과 인사했어요.')}>쓰다듬기</FarmButton>
-        <FarmButton disabled={pending || !farm.inventory.carrot || ready || object.fedAt > now - 60000}
-          onClick={() => act({ type: 'feed', id: object.id }, '먹이를 줬어요.')}>먹이 주기 · 당근 1개</FarmButton>
+        {['carrot', 'wheat'].map(food => <FarmButton key={food} disabled={pending || !farm.inventory[food] || ready || object.fedAt > now - 60000}
+          onClick={() => act({ type: 'feed', id: object.id, item: food }, '먹이를 줬어요.')}>먹이 · {productBook[food].name} 1개</FarmButton>)}
       </>}
       {['pond', 'duckpond'].includes(object.kind) && <FarmButton disabled={pending || fishAt > now}
         onClick={() => act({ type: 'fish', id: object.id }, '물고기를 잡았어요.')}>{fishAt > now ? '낚시까지 ' + remainingTime(fishAt - now) : '낚시'}</FarmButton>}
@@ -354,7 +423,8 @@ export function Settings({ farm, pending, visitor, act, scene, full }) {
       {Object.entries({ motion: '움직임 효과', weather: '날씨 효과', audio: '효과음', ambient: '농장 환경음', music: '배경 음악' }).map(([key, name]) =>
         <label key={key} className="farm-setting"><span>{name}</span><input type="checkbox" disabled={pending}
           checked={Boolean(settings[key])} onChange={event => set(key, event.target.checked)} /></label>)}
-      <h3>카메라 위치</h3>
+      <h3>카메라 위치 · 추천 산책 지점</h3>
+      <p><small>저장한 위치는 사진 모드에서 같은 자리를 다시 찍을 때 쓰고, 방문 링크가 열려 있으면 방문자에게 추천 산책 지점으로 보여요.</small></p>
       {['1', '2', '3'].map(slot => <div className="farm-setting" key={slot}>
         <strong>위치 {slot}</strong>
         <div className="farm-item-actions">
@@ -377,7 +447,9 @@ export function ParcelPanel({ farm, parcel, pending, visitor, act, empty, seed, 
   const biome = terrainAt(x * PARCEL_SIZE + 6, z * PARCEL_SIZE + 6).biome
   const ready = farm.objects.filter(object => !object.stored && parcelAt(object.x, object.z) === parcel && isReady(object, farm.now))
   return <>
-    <p>{({ meadow: '초지', woods: '숲', lakeside: '물가' })[biome]} · {PARCEL_SIZE} × {PARCEL_SIZE} 타일</p>
+    <p>{({ meadow: '초지', woods: '숲', lakeside: '물가' })[biome]} · {PARCEL_SIZE} × {PARCEL_SIZE} 타일 · {zoneCharm(parcel).name}</p>
+    <p><small>{zoneCharm(parcel).text}</small></p>
+    {owned && <p>{ready.length ? '수확할 수 있는 곳 ' + ready.length + '곳' : '지금 거둘 것은 없어요.'}</p>}
     {!visitor && owned && <>
       <form className="farm-inline-form" onSubmit={event => {
         event.preventDefault()
@@ -425,6 +497,8 @@ export function TerrainPanel({ farm, tile, pending, act, visitor }) {
 export function Help() {
   return <div className="farm-help">
     <p>빈 밭에 씨앗을 심고, 시간이 지나면 수확하세요. 창고에서 팔거나 주문을 채워 시설을 늘릴 수 있어요.</p>
+    <p>익은 밭과 생산이 끝난 축사는 누르면 바로 거둬요. 아래 도구에서 낫이나 씨앗을 고르면 밭을 손가락으로 쓸어 한 번에 처리해요.</p>
+    <p>비 온 날 길 위의 달팽이, 벌통 주변 나비, 새 구역의 오래된 팻말처럼 둘러보면 보이는 것들도 있어요.</p>
     <dl>
       <div><dt>시점 이동</dt><dd>드래그 · 방향키 · 두 손가락</dd></div>
       <div><dt>시점 회전</dt><dd>우클릭 드래그 · Q / E</dd></div>

@@ -61,9 +61,9 @@ test('a failed multi-tile build never spends money or leaves a partial structure
   const path = [{ x: 13, z: 20 }, { x: 13, z: 20 }]
   assert.throws(() => run(farm, 'place', { kind: 'plot', path }), /자리/)
   assert.equal(farm.coins, 150)
-  assert.equal(farm.objects.length, 9)
+  assert.equal(farm.objects.length, initial().objects.length)
   const batch = run(farm, 'place', { kind: 'plot', path: [{ x: 13, z: 20 }, { x: 14, z: 20 }] })
-  assert.equal(batch.objects.length, 11)
+  assert.equal(batch.objects.length, farm.objects.length + 2)
   assert.equal(run(batch, 'undo').coins, farm.coins)
 })
 

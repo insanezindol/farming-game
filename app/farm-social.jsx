@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { crops, products } from '../lib/farm-catalog.mjs'
 import { runFarmSocial } from './actions'
+import { zoneCharm } from './farm-panels'
 
 const productName = key => (products[key] ?? crops[key])?.name ?? key
 const ago = at => new Intl.DateTimeFormat('ko-KR', { month: 'numeric', day: 'numeric' }).format(at)
@@ -13,7 +14,10 @@ function Records({ rows, render, empty }) {
   ) : <p>{empty}</p>
 }
 
-function GuestSocial({ farm }) {
+const zoneLabel = (farm, parcel) => parcel ? ' · ' + (farm.zoneNames?.[parcel] || zoneCharm(parcel).name) : ''
+const messageText = (farm, row) => <><strong>{row.from}</strong>{zoneLabel(farm, row.parcel)} {row.text}</>
+
+function GuestSocial({ farm, scene }) {
   const [view, setView] = useState(farm)
   const [pending, startTransition] = useTransition()
   const [result, setResult] = useState('')
@@ -34,15 +38,25 @@ function GuestSocial({ farm }) {
   return (
     <div className="farm-social">
       <p><a href="/">내 농장으로</a></p>
+      {Object.keys(farm.views ?? {}).length > 0 && <>
+        <h3>추천 산책 지점</h3>
+        <div className="farm-actions">{Object.entries(farm.views).map(([slot, spot]) =>
+          <button type="button" key={slot} disabled={!scene} onClick={() => scene.setView(spot)}>지점 {slot} 둘러보기</button>)}</div>
+      </>}
       <h3>방명록</h3>
-      <Records rows={view.social?.messages} render={row => <><strong>{row.from}</strong> {row.text}</>} empty="아직 남겨진 글이 없어요." />
+      <Records rows={view.social?.messages} render={row => messageText(farm, row)} empty="아직 남겨진 글이 없어요." />
       {view.canInteract ? <>
         <form onSubmit={event => {
           event.preventDefault()
           const form = new FormData(event.currentTarget)
-          send({ type: 'message', text: form.get('message') }, '방명록에 남겼어요.')
+          const parcel = form.get('parcel') || undefined
+          send({ type: 'message', text: form.get('message'), parcel }, parcel ? '구역에 감상을 남겼어요.' : '방명록에 남겼어요.')
         }}>
-          <label>인사 남기기<input name="message" maxLength={120} required /></label>
+          <label>마음에 든 구역<select name="parcel" defaultValue="">
+            <option value="">농장 전체</option>
+            {farm.parcels.map(parcel => <option key={parcel} value={parcel}>{zoneLabel(farm, parcel).slice(3)}</option>)}
+          </select></label>
+          <label>짧은 감상 남기기<input name="message" maxLength={120} required /></label>
           <button type="submit" disabled={pending}>남기기</button>
         </form>
         <h3>선물 보내기</h3>
@@ -72,9 +86,9 @@ function GuestSocial({ farm }) {
   )
 }
 
-export function FarmSocial({ farm, visitor, act }) {
+export function FarmSocial({ farm, visitor, act, scene }) {
   const [copied, setCopied] = useState('')
-  if (visitor) return <GuestSocial farm={farm} />
+  if (visitor) return <GuestSocial farm={farm} scene={scene} />
   const url = farm.share?.enabled ? '/visit/' + farm.share.code : ''
   return (
     <div className="farm-social">
@@ -98,8 +112,9 @@ export function FarmSocial({ farm, visitor, act }) {
       <p role="status">{copied}</p>
       <h3>방문 기록</h3>
       <Records rows={farm.social?.visits} render={row => <strong>{row.from}</strong>} empty="아직 방문 기록이 없어요." />
-      <h3>방명록</h3>
-      <Records rows={farm.social?.messages} render={row => <><strong>{row.from}</strong> {row.text}</>} empty="아직 남겨진 글이 없어요." />
+      <p><small>설정에서 저장한 카메라 위치가 방문자에게 추천 산책 지점으로 보여요.</small></p>
+      <h3>방명록과 구역 감상</h3>
+      <Records rows={farm.social?.messages} render={row => messageText(farm, row)} empty="아직 남겨진 글이 없어요." />
       <h3>받은 선물</h3>
       <Records rows={farm.social?.gifts} render={row => <><strong>{row.from}</strong> · {productName(row.item)}</>} empty="아직 선물이 없어요." />
     </div>
