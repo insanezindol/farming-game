@@ -34,7 +34,11 @@ test('the level curve gets steeper but never lowers an existing level', () => {
   // 예전 곡선(25마다 1레벨)으로 Lv.17이던 농장은 XP가 모자라도 Lv.17을 지킨다
   const veteran = run({ ...createFarm('testfarmer', at), level: 17, xp: 400, inventory: { wheat: 1 } }, 'sell')
   assert.equal(veteran.level, 17)
-  assert.equal(levelProgress(veteran).xp, 0)
+  // 저장본을 옮길 때 XP를 Lv.17 시작점으로 올려 막대가 멈춰 보이지 않게 한다
+  const moved = retimeFarm({ ...createFarm('testfarmer', at), level: 17, xp: 400, timing: undefined }, at)
+  assert.equal(moved.level, 17)
+  assert.equal(levelProgress(moved).xp, 0)
+  assert.equal(levelProgress(run({ ...moved, inventory: { wheat: 1 } }, 'sell')).xp, 2)
 })
 
 test('twenty minutes of steady wheat play lands around level 5', () => {
