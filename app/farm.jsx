@@ -150,6 +150,7 @@ function bonusText(before, after, command) {
   }
   const harvested = (after.stats?.harvested ?? 0) - (before.stats?.harvested ?? 0)
   if (command.type === 'collect' && command.ids && harvested >= 10) notes.push('🔥 콤보 ×' + harvested + ' 보너스')
+  if (command.type === 'order' && after.streak?.count > 1) notes.push('🔗 연속 납품 ×' + after.streak.count + ' (+' + Math.min(25, 5 * (after.streak.count - 1)) + '%)')
   if (after.lastFind && JSON.stringify(after.lastFind) !== JSON.stringify(before.lastFind)) notes.push('🍀 ' + productBook[after.lastFind.item]?.name + ' 발견!')
   if (command.type !== 'trade' && after.gifted?.length && JSON.stringify(after.gifted) !== JSON.stringify(before.gifted)) {
     notes.push('🎁 ' + buildings[after.gifted.at(-1)]?.name + ' 선물이 보관함에 왔어요')

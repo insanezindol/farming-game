@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { signOut } from './actions'
 import { buildings, collectionSets, crops, products, recipes, seasonCrops } from '../lib/farm-catalog.mjs'
-import { levelProgress } from '../lib/farm-game.mjs'
+import { levelProgress, maxLevel } from '../lib/farm-game.mjs'
 import { canExpand, parcelAt, parcelPrice, terrainAt, footprint, PARCEL_SIZE, MAP_SIZE } from '../lib/farm-layout.mjs'
 
 export const productBook = { ...crops, ...products }
@@ -409,17 +409,19 @@ function ObjectRecipes({ object, farm, now, pending, act }) {
   const available = Object.entries(recipes).filter(([, recipe]) => recipe.building === object.kind)
   if (!available.length) return null
   const queue = object.queue ?? []
+  const level = object.level ?? 1
+  const slots = 6 + 2 * level
   return <>
-    <p>{queue.length ? '작업 대기열 · ' + queue.length + ' / 8' : '만들 상품을 고르세요.'}</p>
+    <p>{queue.length ? '작업 대기열 · ' + queue.length + ' / ' + slots : '만들 상품을 고르세요.'}{level > 1 ? ' · 증축 ' + level + '단계' : ''}</p>
     {queue.length > 0 && <ul className="farm-list">
       {queue.map((job, index) => <li key={index}><strong>{recipes[job.recipe]?.name || job.recipe}</strong>
         <small>{job.readyAt <= now ? '완료' : remainingTime(job.readyAt - now)}</small></li>)}
     </ul>}
     <ul className="farm-list">
       {available.map(([id, recipe]) => {
-        const limit = Math.min(8 - queue.length, ...Object.entries(recipe.inputs).map(([item, amount]) => Math.floor((farm.inventory[item] || 0) / amount)))
+        const limit = Math.min(slots - queue.length, ...Object.entries(recipe.inputs).map(([item, amount]) => Math.floor((farm.inventory[item] || 0) / amount)))
         return <li key={id}><div><strong>{recipe.name}</strong>
-          <small>{Object.entries(recipe.inputs).map(([item, amount]) => (productBook[item]?.name || item) + ' ×' + amount).join(' · ')} · {remainingTime(recipe.seconds * 1000)}</small>
+          <small>{Object.entries(recipe.inputs).map(([item, amount]) => (productBook[item]?.name || item) + ' ×' + amount).join(' · ')} · {remainingTime(Math.round(recipe.seconds * 1000 * (1.1 - .1 * level)))}</small>
         </div><form className="farm-quantity" onSubmit={event => {
           event.preventDefault()
           const quantity = Number(new FormData(event.currentTarget).get('quantity')) || 1
@@ -488,9 +490,9 @@ export function ObjectPanel({ object, farm, now, pending, visitor, act, edit, mo
       <FarmButton disabled={pending} onClick={move}>옮기기</FarmButton>
       <FarmButton disabled={pending} onClick={store}>보관</FarmButton>
       <FarmButton disabled={pending} active={customize} onClick={() => setCustomize(!customize)}>꾸미기</FarmButton>
-      {animal && <FarmButton disabled={pending || object.level >= 5 || farm.coins < upgradePrice}
-        onClick={() => act({ type: 'upgrade', id: object.id }, '축사를 업그레이드했어요.')}>
-        {object.level >= 5 ? '최대 레벨' : '증축 · ✦ ' + upgradePrice}</FarmButton>}
+      {maxLevel(object) > 1 && <FarmButton disabled={pending || object.level >= maxLevel(object) || farm.coins < upgradePrice}
+        onClick={() => act({ type: 'upgrade', id: object.id }, animal ? '축사를 증축했어요. 한 번에 하나 더 생산해요.' : '공방을 증축했어요. 예약 +2칸, 제작 10% 빨라요.')}>
+        {object.level >= maxLevel(object) ? '최대 레벨' : '증축 · ✦ ' + upgradePrice}</FarmButton>}
     </div>}
     {edit && customize && <>
       <form className="farm-inline-form" onSubmit={event => {

@@ -90,3 +90,33 @@ test('auto replant sows the same seed with an identity the client preview agrees
   const broke = applyFieldCommand({ ...farm, coins: 0 }, { type: 'collect', requestId, fieldTargets }, issued)
   assert.equal(broke.objects.find(object => object.id === plot.id).crop, undefined)
 })
+
+test('new recipes cook in their workshop and an upgraded workshop holds more and works faster', () => {
+  let farm = { ...createFarm('testfarmer', at), coins: 5000, level: 5, xp: 300, inventory: { tomato: 30 } }
+  farm = run(farm, 'place', { kind: 'jamshop', x: 13, z: 20 })
+  const shop = farm.objects.find(object => object.kind === 'jamshop')
+  assert.throws(() => run(farm, 'enqueue', { id: shop.id, recipe: 'tomatosauce', quantity: 9 }), /수량/)
+  farm = run(farm, 'upgrade', { id: shop.id })
+  farm = run(farm, 'upgrade', { id: shop.id })
+  assert.throws(() => run(farm, 'upgrade', { id: shop.id }), /증축할 수 없/)
+  farm = run(farm, 'enqueue', { id: shop.id, recipe: 'tomatosauce', quantity: 10 })
+  const queue = farm.objects.find(object => object.id === shop.id).queue
+  assert.equal(queue.length, 10)
+  assert.equal(queue[0].readyAt - at, 180000 * .8)
+  farm = run(farm, 'collect', { id: shop.id }, queue[0].readyAt)
+  assert.equal(farm.inventory.tomatosauce, 1)
+})
+
+test('orders delivered back to back pay a growing bonus that quietly resets', () => {
+  const job = n => ({ id: 'small-t' + n, kind: 'small', items: { wheat: 1 }, shared: {}, done: false, reward: 100 })
+  // 레벨업 선물이 섞이지 않게 레벨 중간에서 시작한다
+  let farm = { ...createFarm('testfarmer', at), level: 10, xp: 765, inventory: { wheat: 9 } }
+  farm.orders = [job(1), job(2), job(3), job(4)]
+  const paid = []
+  for (const [n, now] of [[1, at], [2, at + 60000], [3, at + 120000], [4, at + 120000 + 11 * 60000]]) {
+    const before = farm.coins
+    farm = run(farm, 'order', { id: 'small-t' + n }, now)
+    paid.push(farm.coins - before)
+  }
+  assert.deepEqual(paid.map(coins => coins - paid[3]), [0, 5, 10, 0])
+})
