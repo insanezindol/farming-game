@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { signOut } from './actions'
-import { buildings, collectionSets, crops, products, recipes, seasonCrops } from '../lib/farm-catalog.mjs'
+import { achievements, buildings, collectionSets, crops, products, recipes, seasonCrops } from '../lib/farm-catalog.mjs'
 import { levelProgress, maxLevel } from '../lib/farm-game.mjs'
 import { canExpand, parcelAt, parcelPrice, terrainAt, footprint, PARCEL_SIZE, MAP_SIZE } from '../lib/farm-layout.mjs'
 
@@ -34,7 +34,7 @@ const icons = {
 const statsLabels = {
   planted: '심은 씨앗', harvested: '수확한 작물', collected: '모은 생산물', sold: '판매한 상품',
   built: '배치한 시설', expanded: '개간한 구역', fished: '잡은 물고기', foraged: '채집한 재료',
-  crafted: '만든 가공품', orders: '완료한 주문', visits: '방문 기록', bestCombo: '최고 콤보',
+  crafted: '만든 가공품', orders: '완료한 주문', visits: '방문 기록', bestCombo: '최고 콤보', golden: '황금 작물', greeted: '만난 들판 손님',
 }
 
 export function Icon({ name }) {
@@ -340,13 +340,9 @@ export function Orders({ farm, pending, act }) {
   </>
 }
 
-export function Progress({ farm }) {
+export function Progress({ farm, pending, act }) {
   const discovery = farm.discovered ?? []
   const stats = Object.entries(farm.stats ?? {}).filter(([key, value]) => statsLabels[key] && typeof value === 'number')
-  const achievements = [
-    ['첫 수확', 'harvested', 1], ['넓어진 농장', 'expanded', 4], ['든든한 목장', 'collected', 20],
-    ['공방 장인', 'crafted', 10], ['낚시꾼', 'fished', 3], ['숲의 친구', 'foraged', 5], ['단골 배달원', 'orders', 5],
-  ]
   const livestock = Object.entries(buildings).filter(([, item]) => item.category === 'animal')
   const step = levelProgress(farm)
   return <>
@@ -382,11 +378,15 @@ export function Progress({ farm }) {
         {Object.entries(farm.records).map(([id, size]) => <li key={id} className="found">{productBook[id]?.icon} {productBook[id]?.name} · 최대 {size}cm</li>)}
       </ul>
     </>}
-    <h3>농장 업적</h3>
+    <h3>농장 업적 <small>이룬 업적은 칭호로 달 수 있어요</small></h3>
     <ul className="farm-discovery">
-      {achievements.map(([name, stat, target]) => {
-        const progress = Math.min(farm.stats?.[stat] ?? 0, target)
-        return <li key={stat} className={progress === target ? 'found' : ''}>{name} · {progress}/{target}</li>
+      {achievements.map(({ id, name, stat, n }) => {
+        const progress = Math.min(farm.stats?.[stat] ?? 0, n)
+        const wearing = farm.title === name
+        return <li key={id} className={progress === n ? 'found' : ''}>{name} · {progress}/{n}
+          {progress === n && act && <button type="button" className="farm-title-pick" disabled={pending} aria-pressed={wearing}
+            onClick={() => act({ type: 'title', id: wearing ? null : id }, wearing ? '칭호를 뗐어요.' : '🏅 ' + name + ' 칭호를 달았어요.')}>{wearing ? '달고 있음' : '칭호 달기'}</button>}
+        </li>
       })}
     </ul>
     <h3>가축 도감</h3>
@@ -450,6 +450,8 @@ export function ObjectPanel({ object, farm, now, pending, visitor, act, edit, mo
     {['plot', 'greenhouse'].includes(object.kind) && !object.crop && !edit &&
       <Seeds farm={farm} pending={pending} ids={[object.id]} act={act} />}
     {object.crop && <p><strong>{crops[object.crop.kind]?.name}</strong> · {ready ? '수확할 수 있어요.' : remainingTime(object.crop.readyAt - now) + ' 뒤에 수확할 수 있어요.'}{object.crop.watered ? ' 💧' : ''}</p>}
+    {!ready && !edit && farm.inventory.compost > 0 && (object.crop || item.product) && <FarmButton disabled={pending}
+      onClick={() => act({ type: 'fertilize', id: object.id }, '퇴비를 줬어요. 바로 거둘 수 있어요!')}>🟫 퇴비 주기 · {farm.inventory.compost}개</FarmButton>}
     {object.crop && !ready && !object.crop.watered && !edit && <FarmButton disabled={pending}
       onClick={() => act({ type: 'water', ids: [object.id] }, '물을 줬어요. 30% 빨리 자라요.')}>💧 물 주기</FarmButton>}
     {item.product && <p>{productBook[item.product]?.name} · {ready ? '모을 수 있어요.' : object.readyAt ? remainingTime(object.readyAt - now) + ' 남았어요.' : '준비 중'}</p>}
@@ -518,9 +520,9 @@ export function Settings({ farm, pending, visitor, act, scene, full }) {
       <label className="farm-setting"><span>화면 품질</span><select disabled={pending} value={settings.quality ?? 'high'} onChange={event => set('quality', event.target.value)}>
         <option value="high">높음</option><option value="low">낮음</option>
       </select></label>
-      {Object.entries({ motion: '움직임 효과', weather: '날씨 효과', audio: '효과음', ambient: '농장 환경음', music: '배경 음악', toon: '만화 같은 명암 (툰 셰이딩)', replant: '수확하면 같은 씨앗 자동으로 다시 심기' }).map(([key, name]) =>
+      {Object.entries({ motion: '움직임 효과', weather: '날씨 효과', audio: '효과음', ambient: '농장 환경음', music: '배경 음악', toon: '만화 같은 명암 (툰 셰이딩)', replant: '수확하면 같은 씨앗 자동으로 다시 심기', minigame: '생산물 받을 때 받기 놀이' }).map(([key, name]) =>
         <label key={key} className="farm-setting"><span>{name}</span><input type="checkbox" disabled={pending}
-          checked={Boolean(settings[key])} onChange={event => set(key, event.target.checked)} /></label>)}
+          checked={key === 'minigame' ? settings[key] !== false : Boolean(settings[key])} onChange={event => set(key, event.target.checked)} /></label>)}
       <h3>카메라 위치 · 추천 산책 지점</h3>
       <p><small>저장한 위치는 사진 모드에서 같은 자리를 다시 찍을 때 쓰고, 방문 링크가 열려 있으면 방문자에게 추천 산책 지점으로 보여요.</small></p>
       {['1', '2', '3'].map(slot => <div className="farm-setting" key={slot}>
@@ -596,6 +598,7 @@ export function Help() {
   return <div className="farm-help">
     <p>빈 밭에 씨앗을 심고, 시간이 지나면 수확하세요. 창고에서 팔거나 주문을 채워 시설을 늘릴 수 있어요.</p>
     <p>익은 밭과 생산이 끝난 축사는 누르면 바로 거둬요. 아래 도구에서 낫이나 씨앗을 고르면 밭을 손가락으로 쓸어 한 번에 처리해요.</p>
+    <p>기다리는 동안: 💧 물뿌리개로 자라는 밭을 쓸면 30% 빨리 자라고(비 오는 날은 심을 때 자동), 퇴비통에서 만든 퇴비를 주면 바로 거둘 수 있어요. 들판에 나타난 손님을 누르면 작은 선물을 줘요. 10분 안에 주문을 이어서 납품하면 보상이 조금씩 늘어요.</p>
     <p>비 온 날 길 위의 달팽이, 벌통 주변 나비, 새 구역의 오래된 팻말처럼 둘러보면 보이는 것들도 있어요.</p>
     <dl>
       <div><dt>시점 이동</dt><dd>드래그 · 방향키 · 두 손가락</dd></div>

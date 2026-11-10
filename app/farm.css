@@ -851,3 +851,26 @@
   .farm-soon { top: calc(var(--top-inset) + 52px); }
 }
 .farm-summary .primary { min-height: 36px; padding: 2px 12px; font-size: .8rem; white-space: nowrap; }
+
+/* ───── 들판 손님, 칭호 ───── */
+.farm-guest {
+  position: absolute;
+  z-index: 1;
+  transform: translate(-50%, -110%);
+  pointer-events: auto;
+  width: 44px;
+  height: 44px;
+  border: 2.5px solid #fff3d6;
+  border-radius: 50%;
+  background: #fffaf0;
+  box-shadow: var(--farm-shadow);
+  font-size: 1.4rem;
+  line-height: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .farm-stage:not(.calm) .farm-guest { animation: farm-guest-hop 1.2s ease-in-out infinite; }
+}
+@keyframes farm-guest-hop { 0%, 100% { translate: 0 0; } 50% { translate: 0 -6px; } }
+.farm-title-badge { display: block; font-size: .72rem; color: #a2541c; font-family: var(--farm-cute); }
+.farm-title-pick { margin-left: 6px; min-height: 28px; padding: 1px 8px; border: 1px solid var(--farm-line); border-radius: 10px; background: #fff1b8; color: var(--farm-text); font-size: .72rem; }
+.farm-title-pick[aria-pressed=true] { background: #ff9f7a; color: #5a2f14; }

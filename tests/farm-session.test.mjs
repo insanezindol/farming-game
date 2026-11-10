@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { applyFarmCommand, applyFieldCommand, createFarm, cropIdentity, levelProgress, retimeFarm, weatherAt } from '../lib/farm-game.mjs'
+import { applyFarmCommand, applyFieldCommand, createFarm, cropIdentity, fieldGuest, levelProgress, publicFarm, retimeFarm, roll, weatherAt } from '../lib/farm-game.mjs'
 import { buildings, crops } from '../lib/farm-catalog.mjs'
 
 const at = 1760000000000
@@ -119,4 +119,50 @@ test('orders delivered back to back pay a growing bonus that quietly resets', ()
     paid.push(farm.coins - before)
   }
   assert.deepEqual(paid.map(coins => coins - paid[3]), [0, 5, 10, 0])
+})
+
+test('compost finishes a growing crop or a waiting coop right away', () => {
+  let farm = { ...createFarm('testfarmer', at), coins: 500, inventory: { compost: 1 } }
+  const plot = farm.objects.find(object => object.kind === 'plot')
+  farm = run(farm, 'plant', { ids: [plot.id], crop: 'berry' })
+  assert.throws(() => run(farm, 'fertilize', { id: '1' }), /퇴비를 줄 곳/)
+  farm = run(farm, 'fertilize', { id: plot.id }, at + 1000)
+  assert.equal(farm.objects.find(object => object.id === plot.id).crop.readyAt, at + 1000)
+  assert.equal(farm.inventory.compost, undefined)
+  assert.throws(() => run(farm, 'fertilize', { id: plot.id }), /퇴비가 없어요/)
+})
+
+test('a field guest can be greeted once while it is visiting', () => {
+  const farm = createFarm('testfarmer', at)
+  const slots = Array.from({ length: 40 }, (_, n) => Math.floor(at / 180000) + n)
+  const slot = slots.find(n => roll('guest', farm.handle, n) <= .7)
+  const now = slot * 180000 + 10000
+  const guest = fieldGuest(farm, now)
+  assert.ok(guest && farm.objects.some(object => object.x === guest.x && object.z === guest.z))
+  assert.equal(fieldGuest(farm, now + 70000), null)
+  const greeted = run(farm, 'greet', { id: guest.id }, now + 60000)
+  assert.equal(greeted.stats.greeted, 1)
+  assert.throws(() => run(greeted, 'greet', { id: guest.id }, now + 61000), /떠났어요/)
+  assert.throws(() => run(farm, 'greet', { id: guest.id }, now + 120000), /떠났어요/)
+})
+
+test('the catch game bonus comes from the server seed and a miss still collects', () => {
+  let farm = { ...createFarm('testfarmer', at), coins: 500 }
+  farm = run(farm, 'place', { kind: 'coop', x: 13, z: 20 })
+  const coop = farm.objects.find(object => object.kind === 'coop')
+  const readyAt = coop.readyAt
+  const played = run(farm, 'collect', { id: coop.id, played: true }, readyAt)
+  const plain = run(farm, 'collect', { id: coop.id }, readyAt)
+  assert.equal(played.inventory.egg - plain.inventory.egg, roll('mini', coop.id, readyAt) < .4 ? 1 : 0)
+  assert.equal(plain.inventory.egg, 1)
+  assert.deepEqual(run(farm, 'collect', { id: coop.id, played: true }, readyAt).inventory, played.inventory)
+})
+
+test('an achieved title shows on the public farm', () => {
+  let farm = createFarm('testfarmer', at)
+  assert.throws(() => run(farm, 'title', { id: 'first' }), /이루지 못한/)
+  farm = { ...farm, stats: { ...farm.stats, harvested: 1 } }
+  farm = run(farm, 'title', { id: 'first' })
+  assert.equal(publicFarm(farm, at).title, '첫 수확')
+  assert.equal(run(farm, 'title', { id: null }).title, undefined)
 })

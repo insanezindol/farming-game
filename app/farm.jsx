@@ -8,7 +8,7 @@ import { FarmSocial } from './farm-social'
 import { batchKinds, buildings, crops, recipes } from '../lib/farm-catalog.mjs'
 import { parcelAt, canPlace, footprint, inMap, objectsUnder, terrainAt, MAP_SIZE, PARCEL_SIZE } from '../lib/farm-layout.mjs'
 import { goldenCheck } from '../lib/farm-luck.mjs'
-import { cropIdentity } from '../lib/farm-game.mjs'
+import { cropIdentity, fieldGuest } from '../lib/farm-game.mjs'
 import {
   FarmButton, FarmMap, TileGrid, Shop, Seeds, Inventory, Orders, Progress, ObjectPanel, Peddler,
   Settings, ParcelPanel, TerrainPanel, Help, objectName, terrainTileLabel, isReady, remainingTime, productBook, josa, inSeason,
@@ -150,6 +150,7 @@ function bonusText(before, after, command) {
   }
   const harvested = (after.stats?.harvested ?? 0) - (before.stats?.harvested ?? 0)
   if (command.type === 'collect' && command.ids && harvested >= 10) notes.push('🔥 콤보 ×' + harvested + ' 보너스')
+  if (command.played && after.lastMini?.bonus) notes.push('🎉 받기 성공! 하나 더')
   if (command.type === 'order' && after.streak?.count > 1) notes.push('🔗 연속 납품 ×' + after.streak.count + ' (+' + Math.min(25, 5 * (after.streak.count - 1)) + '%)')
   if (after.lastFind && JSON.stringify(after.lastFind) !== JSON.stringify(before.lastFind)) notes.push('🍀 ' + productBook[after.lastFind.item]?.name + ' 발견!')
   if (command.type !== 'trade' && after.gifted?.length && JSON.stringify(after.gifted) !== JSON.stringify(before.gifted)) {
@@ -158,7 +159,10 @@ function bonusText(before, after, command) {
   return notes.length ? ' ' + notes.join(' ') : ''
 }
 
-function FishingGame({ onCatch, onMiss, onClose }) {
+const fishingWords = { label: '낚시', icon: '🎣', splash: '💦', wait: '찌를 지켜보세요…', bite: '찌가 쑥 가라앉았어요! 지금!', button: '낚아채기' }
+
+// 낚시 연출을 받기 놀이에도 쓴다
+function FishingGame({ onCatch, onMiss, onClose, words = fishingWords }) {
   const [phase, setPhase] = useState('wait')
   useEffect(() => {
     const bite = window.setTimeout(() => setPhase('bite'), 900 + Math.random() * 1600)
@@ -169,11 +173,11 @@ function FishingGame({ onCatch, onMiss, onClose }) {
     const away = window.setTimeout(onMiss, 1500)
     return () => window.clearTimeout(away)
   }, [phase])
-  return <div className="farm-fishing" role="dialog" aria-modal="true" aria-label="낚시">
-    <div className={'farm-bobber ' + phase} aria-hidden="true"><span>🎣</span><b>{phase === 'bite' ? '💦' : '〰'}</b></div>
-    <p role="status">{phase === 'bite' ? '찌가 쑥 가라앉았어요! 지금!' : '찌를 지켜보세요…'}</p>
+  return <div className="farm-fishing" role="dialog" aria-modal="true" aria-label={words.label}>
+    <div className={'farm-bobber ' + phase} aria-hidden="true"><span>{words.icon}</span><b>{phase === 'bite' ? words.splash : '〰'}</b></div>
+    <p role="status">{phase === 'bite' ? words.bite : words.wait}</p>
     <div className="farm-actions">
-      <button type="button" className="primary" autoFocus onClick={() => phase === 'bite' ? onCatch() : onMiss()}>낚아채기</button>
+      <button type="button" className="primary" autoFocus onClick={() => phase === 'bite' ? onCatch() : onMiss()}>{words.button}</button>
       <FarmButton onClick={onClose}>그만두기</FarmButton>
     </div>
   </div>
@@ -309,6 +313,7 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
   const [summary, setSummary] = useState(() => visitor ? null : returnSummary(initialFarm, initialFarm.now))
   const [gift, setGift] = useState(null)
   const [fishing, setFishing] = useState(null)
+  const [mini, setMini] = useState(null)
   const [coinPop, setCoinPop] = useState(null)
   const toon = Boolean(farm.settings?.toon)
   const coins = useTicker(farm.coins, farm.settings?.motion !== false)
@@ -610,6 +615,13 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
     }
     // 평소에는 오브젝트를 바로 만진다: 익은 밭·생산 완료 시설은 수확, 빈 밭은 씨앗, 판매대·농가는 창고, 트럭은 주문
     if (!edit && !visitor && selected) {
+      // 축사 생산물은 짧은 받기 놀이를 하고 받는다 (설정에서 끌 수 있고, 놓쳐도 기본 수량은 받는다)
+      if (isReady(selected, now) && buildings[selected.kind]?.product && farm.settings?.minigame !== false) {
+        const item = productBook[buildings[selected.kind].product]
+        setMini({ id, name: objectName(selected), words: { label: '받기 놀이', icon: buildings[selected.kind].icon, splash: item?.icon,
+          wait: (item?.name ?? '생산물') + '을 기다려요…', bite: '지금 받아요!', button: '받기!' } })
+        return
+      }
       if (isReady(selected, now) && (selected.crop || buildings[selected.kind]?.product)) {
         act({ type: 'collect', id }, objectName(selected) + '에서 거뒀어요.')
         return
@@ -659,6 +671,7 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
     function handleKey(event) {
       if (event.key === 'Escape') {
         if (fishing) setFishing(null)
+        else if (mini) setMini(null)
         else if (gift) setGift(null)
         else if (photo) setPhoto(false)
         else if (tool) setTool(null)
@@ -741,6 +754,7 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
 
   const goldenOf = goldenCheck(farm)
   const soon = upcoming(visible, now)
+  const guest = visitor ? null : fieldGuest(farm, now)
   const timerGroups = {}
   for (const item of visible) {
     if (item.crop) {
@@ -796,6 +810,11 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
           </button>
         })}
         {issue && edit && <p className="placement-issue" data-tile={issue.tile.x + ',' + issue.tile.z} role="status">{issue.text}</p>}
+        {status === 'ready' && !visitor && !photo && !edit && guest && !guest.done &&
+          <button type="button" className="farm-guest" data-tile={guest.x + ',' + guest.z} disabled={pending}
+            onClick={() => act({ type: 'greet', id: guest.id }, guest.icon + ' ' + guest.name + ' 손님이 선물을 두고 갔어요' +
+              (guest.coins ? ' · ✦ ' + guest.coins : ' · ' + productBook[guest.item]?.name + ' ' + guest.count + '개'))}
+            aria-label={guest.name + ' 손님에게 인사하기'}>{guest.icon}</button>}
         {status === 'ready' && !visitor && !photo && !edit && farm.peddlerOffer && !farm.peddlerOffer.done &&
           <button type="button" className="farm-peddler-tag" data-tile="16,17" onClick={() => open('peddler')}>🛒 떠돌이 상인</button>}
       </div>
@@ -810,7 +829,7 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
         <header className="farm-hud">
           <div className="farm-identity">
             <span className="farm-emblem"><Mark /></span>
-            <div className="farm-owner"><span>{visitor ? '무야호농장 · 방문 중' : '무야호농장'}</span><h1>{farm.name ?? farm.handle + '의 농장'}</h1></div>
+            <div className="farm-owner"><span>{visitor ? '무야호농장 · 방문 중' : '무야호농장'}</span><h1>{farm.name ?? farm.handle + '의 농장'}</h1>{farm.title && <span className="farm-title-badge">🏅 {farm.title}</span>}</div>
             {visitor ? <span className="farm-visitor-level">Lv. {farm.level}</span> :
               <FarmButton className="farm-level" aria-label={'농장 기록, 레벨 ' + farm.level} onClick={() => open('progress')}>Lv. {farm.level}</FarmButton>}
           </div>
@@ -918,7 +937,7 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
           {panel.type === 'bag' && <Inventory farm={farm} pending={pending} act={act} openObject={id => open('object', { id })} />}
           {panel.type === 'orders' && <Orders farm={farm} pending={pending} act={act} />}
           {panel.type === 'peddler' && <Peddler farm={farm} pending={pending} act={act} />}
-          {panel.type === 'progress' && <Progress farm={farm} />}
+          {panel.type === 'progress' && <Progress farm={farm} pending={pending} act={act} />}
           {panel.type === 'help' && <Help />}
           {panel.type === 'settings' && <Settings farm={farm} pending={pending} visitor={visitor} act={act} scene={controller.current} full={canFullscreen ? fullscreen : null} />}
           {panel.type === 'share' && <FarmSocial farm={farm} visitor={visitor} act={act} scene={controller.current} />}
@@ -967,6 +986,9 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
         </div>
       </div>}
 
+      {mini && <FishingGame words={mini.words} onClose={() => setMini(null)}
+        onMiss={() => { const { id, name } = mini; setMini(null); act({ type: 'collect', id }, name + '에서 거뒀어요. 다음엔 타이밍을 맞춰 보세요!') }}
+        onCatch={() => { const { id, name } = mini; setMini(null); act({ type: 'collect', id, played: true }, name + '에서 거뒀어요.') }} />}
       {fishing && <FishingGame onClose={() => setFishing(null)}
         onMiss={() => { setFishing(null); setToast({ text: '물고기가 도망갔어요. 다시 던져 보세요.' }) }}
         onCatch={() => { const { command, success } = fishing; setFishing(null); act(command, success) }} />}
