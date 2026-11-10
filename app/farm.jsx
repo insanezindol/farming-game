@@ -5,7 +5,7 @@ import { runFarmAction } from './actions'
 import { useFarmFieldQueue } from './farm-field-queue'
 import { Mark } from './art'
 import { FarmSocial } from './farm-social'
-import { batchKinds, buildings, crops } from '../lib/farm-catalog.mjs'
+import { batchKinds, buildings, crops, recipes } from '../lib/farm-catalog.mjs'
 import { parcelAt, canPlace, footprint, inMap, objectsUnder, terrainAt, MAP_SIZE, PARCEL_SIZE } from '../lib/farm-layout.mjs'
 import { goldenCheck } from '../lib/farm-luck.mjs'
 import { cropIdentity } from '../lib/farm-game.mjs'
@@ -75,6 +75,8 @@ function placementIssue(farm, placement, point, moving, path = [point]) {
 }
 
 // 접속했을 때 지금 할 일을 한 줄로 알려 준다
+const recipeProduct = key => recipes[key]?.product
+
 function returnSummary(farm, now) {
   const ready = farm.objects.filter(object => isReady(object, now))
   const parts = []
@@ -92,6 +94,27 @@ function returnSummary(farm, now) {
   }
   // '…익었고, …있고' 의 마지막 '고'를 '어요'로 맺는다
   return { text: parts.slice(0, 3).join(', ').replace(/고$/, '어요'), target: ready[0] }
+}
+
+// 곧 준비되는 것 3줄: 작물은 종류별로 묶고, 시설은 하나씩 보여 준다
+function upcoming(objects, now) {
+  const entries = []
+  const fields = {}
+  for (const object of objects) {
+    if (object.crop) {
+      const entry = fields[object.crop.kind] ??= { key: 'crop:' + object.crop.kind, icon: crops[object.crop.kind]?.icon,
+        name: crops[object.crop.kind]?.name, count: 0, at: Infinity, target: object }
+      entry.count++
+      if (object.crop.readyAt < entry.at) Object.assign(entry, { at: object.crop.readyAt, target: object })
+      continue
+    }
+    const product = buildings[object.kind]?.product
+    const at = product ? object.readyAt : object.queue?.[0]?.readyAt
+    if (!at) continue
+    const item = productBook[product ?? recipeProduct(object.queue[0].recipe)]
+    entries.push({ key: object.id, icon: item?.icon, name: item?.name, count: product ? object.level || 1 : object.queue.filter(job => job.readyAt <= Math.max(now, at)).length, at, target: object })
+  }
+  return [...Object.values(fields), ...entries].sort((a, b) => a.at - b.at).slice(0, 3)
 }
 
 // 코인이 바뀌면 숫자가 또르르 올라간다 (움직임을 끄면 바로 바뀐다)
@@ -702,6 +725,7 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
   }
 
   const goldenOf = goldenCheck(farm)
+  const soon = upcoming(visible, now)
   const timerGroups = {}
   for (const item of visible) {
     if (item.crop) {
@@ -796,6 +820,13 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
           <strong>📮 우편함 쪽지 {guideStep + 1}/3 · {guideNotes[guideStep][0]}</strong>
           <p>{guideNotes[guideStep][1]}</p>
           <button type="button" disabled={pending} onClick={() => act({ type: 'setSettings', settings: { guide: false } })}>쪽지 그만 보기</button>
+        </aside>}
+
+        {!visitor && !edit && !panel && !summary && guideStep === null && status === 'ready' && soon.length > 0 && <aside className="farm-soon" aria-label="곧 준비되는 것">
+          {soon.map(entry => <button type="button" key={entry.key} className={entry.at <= now ? 'ready' : ''}
+            onClick={() => controller.current?.setView({ x: entry.target.x + 1, z: entry.target.z + 1, zoom: 1.7 })}>
+            {entry.icon} {entry.name} {entry.count}{entry.target.crop ? '칸' : '개'} · <b>{entry.at <= now ? '준비됨' : remainingTime(entry.at - now)}</b>
+          </button>)}
         </aside>}
 
         <aside className="farm-map-hud" aria-label="농장 지도와 시점">

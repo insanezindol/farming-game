@@ -43,6 +43,8 @@ test('petting and treats build hearts with a daily cap and unlock name tags', ()
   farm = run(farm, 'pet', { id: coop.id })
   farm = run(farm, 'pet', { id: coop.id }, at + 1000)
   assert.equal(farm.objects.find(object => object.id === coop.id).love, 1)
+  // 닭장이 5분이면 차서, 간식을 여러 번 줄 수 있게 생산을 길게 잡아 둔다
+  farm.objects.find(object => object.id === coop.id).readyAt = at + 3600000
   for (let i = 0; i < 6; i++) farm = run(farm, 'feed', { id: coop.id }, at + (i + 1) * 61000)
   assert.equal(farm.objects.find(object => object.id === coop.id).love, 10)
   assert.equal(hearts(farm.objects.find(object => object.id === coop.id)), 1)

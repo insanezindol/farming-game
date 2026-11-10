@@ -816,3 +816,37 @@
 @media (max-height: 460px) and (orientation: landscape) {
   .farm-quick { left: auto; right: var(--right-inset); transform: none; bottom: calc(var(--bottom-inset) + 60px); }
 }
+
+/* ───── 곧 준비되는 것 ───── */
+.farm-soon {
+  position: absolute;
+  z-index: 2;
+  top: calc(var(--top-inset) + 60px);
+  right: var(--right-inset);
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+  max-width: min(260px, 46vw);
+}
+.farm-soon button {
+  min-height: 34px;
+  padding: 4px 11px;
+  border: 2.5px solid #fff3d6;
+  border-radius: 16px;
+  background: var(--farm-panel);
+  box-shadow: var(--farm-shadow);
+  color: var(--farm-text);
+  font-family: var(--farm-cute);
+  font-size: .8rem;
+  text-align: right;
+}
+.farm-soon b { font-weight: 400; color: #45623c; }
+.farm-soon button.ready { background: #fff1b8; }
+.farm-soon button.ready b { color: #a2541c; }
+@media (prefers-reduced-motion: no-preference) {
+  .farm-stage:not(.calm) .farm-soon button.ready { animation: farm-soon-wiggle 1.6s ease-in-out infinite; }
+}
+@keyframes farm-soon-wiggle { 0%, 80%, 100% { transform: rotate(0); } 86% { transform: rotate(-3deg); } 93% { transform: rotate(3deg); } }
+@media (max-height: 460px) and (orientation: landscape) {
+  .farm-soon { top: calc(var(--top-inset) + 52px); }
+}

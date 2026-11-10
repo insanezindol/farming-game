@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { signOut } from './actions'
 import { buildings, collectionSets, crops, products, recipes, seasonCrops } from '../lib/farm-catalog.mjs'
+import { levelProgress } from '../lib/farm-game.mjs'
 import { canExpand, parcelAt, parcelPrice, terrainAt, footprint, PARCEL_SIZE, MAP_SIZE } from '../lib/farm-layout.mjs'
 
 export const productBook = { ...crops, ...products }
@@ -347,8 +348,9 @@ export function Progress({ farm }) {
     ['공방 장인', 'crafted', 10], ['낚시꾼', 'fished', 3], ['숲의 친구', 'foraged', 5], ['단골 배달원', 'orders', 5],
   ]
   const livestock = Object.entries(buildings).filter(([, item]) => item.category === 'animal')
+  const step = levelProgress(farm)
   return <>
-    <div className="farm-progress"><strong>Lv. {farm.level}</strong><progress max="25" value={farm.xp % 25} aria-label="다음 레벨까지 경험치" /><span>{farm.xp % 25} / 25 XP</span></div>
+    <div className="farm-progress"><strong>Lv. {farm.level}</strong><progress max={step.need} value={step.xp} aria-label="다음 레벨까지 경험치" /><span>{step.xp} / {step.need} XP</span></div>
     {farm.charm && <div className="farm-charm">
       <strong>🌸 {farm.charm.name}</strong><span>매력 {farm.charm.score}{farm.charm.next ? ' / ' + farm.charm.next : ''}</span>
       <small>장식의 종류가 많을수록 매력이 올라요. 단계마다 판매 팁이 2%씩 늘고 방문 화면에 배지가 보여요.</small>
