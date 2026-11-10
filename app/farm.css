@@ -850,3 +850,4 @@
 @media (max-height: 460px) and (orientation: landscape) {
   .farm-soon { top: calc(var(--top-inset) + 52px); }
 }
+.farm-summary .primary { min-height: 36px; padding: 2px 12px; font-size: .8rem; white-space: nowrap; }

@@ -447,7 +447,9 @@ export function ObjectPanel({ object, farm, now, pending, visitor, act, edit, mo
   return <>
     {['plot', 'greenhouse'].includes(object.kind) && !object.crop && !edit &&
       <Seeds farm={farm} pending={pending} ids={[object.id]} act={act} />}
-    {object.crop && <p><strong>{crops[object.crop.kind]?.name}</strong> · {ready ? '수확할 수 있어요.' : remainingTime(object.crop.readyAt - now) + ' 뒤에 수확할 수 있어요.'}</p>}
+    {object.crop && <p><strong>{crops[object.crop.kind]?.name}</strong> · {ready ? '수확할 수 있어요.' : remainingTime(object.crop.readyAt - now) + ' 뒤에 수확할 수 있어요.'}{object.crop.watered ? ' 💧' : ''}</p>}
+    {object.crop && !ready && !object.crop.watered && !edit && <FarmButton disabled={pending}
+      onClick={() => act({ type: 'water', ids: [object.id] }, '물을 줬어요. 30% 빨리 자라요.')}>💧 물 주기</FarmButton>}
     {item.product && <p>{productBook[item.product]?.name} · {ready ? '모을 수 있어요.' : object.readyAt ? remainingTime(object.readyAt - now) + ' 남았어요.' : '준비 중'}</p>}
     {ready && <button type="button" className="primary" disabled={pending}
       onClick={() => act({ type: 'collect', id: object.id }, '창고에 담았어요.')}>{object.crop ? '수확하기' : '생산물 받기'}</button>}
@@ -514,7 +516,7 @@ export function Settings({ farm, pending, visitor, act, scene, full }) {
       <label className="farm-setting"><span>화면 품질</span><select disabled={pending} value={settings.quality ?? 'high'} onChange={event => set('quality', event.target.value)}>
         <option value="high">높음</option><option value="low">낮음</option>
       </select></label>
-      {Object.entries({ motion: '움직임 효과', weather: '날씨 효과', audio: '효과음', ambient: '농장 환경음', music: '배경 음악', toon: '만화 같은 명암 (툰 셰이딩)' }).map(([key, name]) =>
+      {Object.entries({ motion: '움직임 효과', weather: '날씨 효과', audio: '효과음', ambient: '농장 환경음', music: '배경 음악', toon: '만화 같은 명암 (툰 셰이딩)', replant: '수확하면 같은 씨앗 자동으로 다시 심기' }).map(([key, name]) =>
         <label key={key} className="farm-setting"><span>{name}</span><input type="checkbox" disabled={pending}
           checked={Boolean(settings[key])} onChange={event => set(key, event.target.checked)} /></label>)}
       <h3>카메라 위치 · 추천 산책 지점</h3>

@@ -256,7 +256,7 @@ function useFarmAudio(settings, weather) {
     return () => window.clearInterval(timer)
   }, [settings.ambient, weather])
 
-  return (type, kind) => {
+  return (type, kind, count = 1) => {
     if (!audio.current.audio) return
     // 연속 입력 때 소리가 겹쳐 커지지 않도록 같은 소리는 잠깐 쉬었다 낸다
     const stamp = performance.now()
@@ -270,6 +270,12 @@ function useFarmAudio(settings, weather) {
       return
     }
     if (type === 'plant') return note(880, .05, 0, .07, 'triangle'), note(1175, .035, .05, .06, 'triangle')
+    // 쓸어 수확은 칸마다 도레미로 한 음씩 올라간다
+    if (type === 'collect' && kind === 'plot' && count > 1) {
+      const scale = [523.25, 587.33, 659.25, 698.46, 783.99, 880, 987.77, 1046.5]
+      scale.slice(0, Math.min(count, 8)).forEach((pitch, step) => note(pitch, .05, step * .06, .14, 'triangle'))
+      return
+    }
     if (type === 'collect' && kind === 'plot') return note(1320, .04, 0, .09, 'sawtooth'), note(990, .035, .06, .1, 'sawtooth')
     if (type === 'collect' && ['barn', 'dairy'].includes(kind)) return note(330, .06, 0, .22), note(392, .05, .1, .25)
     if (type === 'place' && batchKinds.includes(kind) && kind !== 'plot') return note(196, .08, 0, .09, 'square'), note(165, .06, .07, .08, 'square')
@@ -438,7 +444,9 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
         setToast({ text: result.error, error: true })
         return false
       }
-      play(command.type, 'plot')
+      const beds = fieldCollect ? Object.keys(result.command.fieldTargets).length : ids.length
+      play(command.type, 'plot', beds)
+      if (fieldCollect && farm.settings?.motion !== false) navigator.vibrate?.(beds > 1 ? [12, 40, 18] : 12)
       controller.current?.react(command.type, fieldCollect ? Object.keys(result.command.fieldTargets) : ids)
       if (!result.local) setToast({ text: '동기화되기 전에 화면을 닫으면 밭 작업이 사라질 수 있어요.', error: true })
       else if (fieldCollect && result.command.ids?.length >= 10) setToast({ text: '🔥 콤보 ×' + result.command.ids.length })
@@ -616,6 +624,12 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
   // 씨앗·낫을 고른 상태에서만 쓸고 지나간 밭을 한 번씩 처리한다
   function sweep(tiles) {
     const beds = objectsUnder(farm, tiles).filter(isBed)
+    if (tool === 'water') {
+      const ids = beds.filter(item => item.crop && !item.crop.watered && item.crop.readyAt > now).map(item => item.id)
+      if (ids.length) act({ type: 'water', ids }, '💧 ' + ids.length + '칸에 물을 줬어요. 30% 빨리 자라요.')
+      else setToast({ text: '물을 줄 작물이 없어요. 자라는 중인 밭에 한 번씩 줄 수 있어요.' })
+      return
+    }
     if (tool === 'harvest') {
       const ids = beds.filter(item => item.crop?.readyAt <= now).map(item => item.id)
       if (ids.length) act({ type: 'collect', ids }, '작물 ' + ids.length + '칸을 거뒀어요.')
@@ -776,7 +790,7 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
                 act({ type: 'collect', ids }, '작물 ' + ids.length + '칸을 거뒀어요.')
               } else pick({ x: item.x, z: item.z, id: item.id })
             }}>
-            <span>{ripe ? <>{golden ? '✨' : icon ?? '✦'}<i className="ripe-word"> 수확</i>{count}</> : growing ? <>{icon} {time}{count}</> :
+            <span>{ripe ? <>{golden ? '✨' : icon ?? '✦'}<i className="ripe-word"> 수확</i>{count}</> : growing ? <>{icon} {time}{item.crop.watered ? '💧' : ''}{count}</> :
               isBed(item) && !visitor && !edit ? '씨앗 심기' : label}</span>
           </button>
         })}
@@ -813,6 +827,10 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
             controller.current?.setView({ x: summary.target.x + 1, z: summary.target.z + 1, zoom: 1.7 })
             setSummary(null)
           }}>{summary.text}{summary.target && <small> · 보러 가기</small>}</button>
+          {summary.target && ready.length > 0 && <button type="button" className="primary" disabled={pending || status !== 'ready'} onClick={() => {
+            act({ type: 'collect' }, '준비된 생산물을 모두 모았어요.', undefined, ready.map(item => item.id))
+            setSummary(null)
+          }}>한 번에 걷기</button>}
           <FarmButton icon="close" className="farm-square" aria-label="요약 닫기" onClick={() => setSummary(null)} />
         </div>}
 
@@ -842,9 +860,10 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
 
         {!visitor && !edit && !panel && status === 'ready' && <div className="farm-quick" role="toolbar" aria-label="쓸어서 심기와 수확">
           <FarmButton active={tool === 'harvest'} onClick={() => chooseTool('harvest')}>🌾 낫</FarmButton>
+          <FarmButton active={tool === 'water'} onClick={() => chooseTool('water')}>💧 물뿌리개</FarmButton>
           {seedChoices.map(crop => <FarmButton key={crop} active={tool?.crop === crop} disabled={farm.coins < crops[crop].seed}
             onClick={() => chooseTool({ crop })}>{crops[crop].icon} {crops[crop].name}{inSeason(farm, crop) ? ' · 제철' : ''}</FarmButton>)}
-          {tool && <small>{tool === 'harvest' ? '익은 밭을 손가락으로 쓸어 거둬요' : '빈 밭을 쓸어 심어요 · 칸당 ✦ ' + crops[tool.crop].seed}</small>}
+          {tool && <small>{tool === 'harvest' ? '익은 밭을 손가락으로 쓸어 거둬요' : tool === 'water' ? '자라는 밭을 쓸면 30% 빨리 자라요 (한 번씩)' : '빈 밭을 쓸어 심어요 · 칸당 ✦ ' + crops[tool.crop].seed}</small>}
         </div>}
 
         {!visitor && <nav className="farm-tools" aria-label="농장 도구">

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { applyFarmCommand, createFarm, levelProgress, retimeFarm } from '../lib/farm-game.mjs'
+import { applyFarmCommand, applyFieldCommand, createFarm, cropIdentity, levelProgress, retimeFarm, weatherAt } from '../lib/farm-game.mjs'
 import { buildings, crops } from '../lib/farm-catalog.mjs'
 
 const at = 1760000000000
@@ -50,4 +50,43 @@ test('twenty minutes of steady wheat play lands around level 5', () => {
     attempt('sell', {}, now)
   }
   assert.ok(farm.level >= 4 && farm.level <= 6, 'Lv.' + farm.level)
+})
+
+const day = 86400000
+const rainy = Math.ceil(at / day / 4) * 4 * day + 3600000
+
+test('watering speeds a growing crop once and rainy days water new seeds', () => {
+  assert.equal(weatherAt(at), 'clear')
+  assert.equal(weatherAt(rainy), 'rain')
+  let farm = createFarm('testfarmer', at)
+  const plot = farm.objects.find(object => object.kind === 'plot')
+  farm = run(farm, 'plant', { ids: [plot.id], crop: 'berry' })
+  const later = at + 100000
+  farm = run(farm, 'water', { ids: [plot.id] }, later)
+  const crop = farm.objects.find(object => object.id === plot.id).crop
+  assert.equal(crop.readyAt, later + Math.ceil((crops.berry.seconds * 1000 - 100000) * .7))
+  assert.throws(() => run(farm, 'water', { ids: [plot.id] }, later + 1000), /물을 줄 작물/)
+  const wet = run(createFarm('testfarmer', rainy), 'plant', { ids: [plot.id], crop: 'berry' }, rainy)
+  const wetCrop = wet.objects.find(object => object.id === plot.id).crop
+  assert.equal(wetCrop.watered, true)
+  assert.equal(wetCrop.readyAt, rainy + crops.berry.seconds * 1000 * .7)
+})
+
+test('auto replant sows the same seed with an identity the client preview agrees on', () => {
+  let farm = run(createFarm('testfarmer', at), 'setSettings', { settings: { replant: true } })
+  const plot = farm.objects.find(object => object.kind === 'plot')
+  farm = run(farm, 'plant', { ids: [plot.id], crop: 'wheat' })
+  const issued = at + 31000
+  const requestId = issued + '_replant-test'
+  const fieldTargets = { [plot.id]: cropIdentity(farm.objects.find(object => object.id === plot.id)) }
+  const preview = applyFieldCommand(farm, { type: 'collect', requestId, fieldTargets }, issued, true)
+  const saved = applyFieldCommand(farm, { type: 'collect', requestId, fieldTargets }, issued + 900)
+  const shown = preview.objects.find(object => object.id === plot.id)
+  const stored = saved.objects.find(object => object.id === plot.id)
+  assert.equal(stored.crop.kind, 'wheat')
+  assert.equal(saved.coins, farm.coins - crops.wheat.seed)
+  assert.equal(cropIdentity(shown), cropIdentity(stored))
+  // 코인이 모자라면 그 밭만 비워 둔다
+  const broke = applyFieldCommand({ ...farm, coins: 0 }, { type: 'collect', requestId, fieldTargets }, issued)
+  assert.equal(broke.objects.find(object => object.id === plot.id).crop, undefined)
 })
