@@ -2,11 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { runFarmAction } from './actions'
+import { useFarmFieldQueue } from './farm-field-queue'
 import { Mark } from './art'
 import { FarmSocial } from './farm-social'
 import { batchKinds, buildings, crops } from '../lib/farm-catalog.mjs'
 import { parcelAt, canPlace, footprint, inMap, objectsUnder, terrainAt, MAP_SIZE, PARCEL_SIZE } from '../lib/farm-layout.mjs'
 import { goldenCheck } from '../lib/farm-luck.mjs'
+import { cropIdentity } from '../lib/farm-game.mjs'
 import {
   FarmButton, FarmMap, TileGrid, Shop, Seeds, Inventory, Orders, Progress, ObjectPanel, Peddler,
   Settings, ParcelPanel, TerrainPanel, Help, objectName, terrainTileLabel, isReady, remainingTime, productBook, josa, inSeason,
@@ -255,8 +257,9 @@ function useFarmAudio(settings, weather) {
   }
 }
 
-export function Farm({ initialFarm, visitor = false }) {
-  const [farm, setFarm] = useState(initialFarm)
+export function Farm({ initialFarm, accountId, visitor = false }) {
+  const fields = useFarmFieldQueue(initialFarm, accountId)
+  const { farm, confirmed, settled } = fields
   const [now, setNow] = useState(initialFarm.now)
   const [status, setStatus] = useState('loading')
   const [panel, setPanel] = useState(null)
@@ -308,9 +311,21 @@ export function Farm({ initialFarm, visitor = false }) {
 
   useEffect(() => {
     const started = Date.now()
-    const timer = window.setInterval(() => setNow(farm.now + Date.now() - started), 500)
+    setNow(confirmed.now)
+    const timer = window.setInterval(() => setNow(confirmed.now + Date.now() - started), 500)
     return () => window.clearInterval(timer)
-  }, [farm.now])
+  }, [confirmed.now])
+
+  useEffect(() => {
+    if (!settled) return
+    const { before, after, error } = settled
+    if (after.level > before.level && after.levelGift) setGift(after.levelGift)
+    if (after.coins > before.coins) setCoinPop({ value: after.coins - before.coins, key: Date.now() })
+    const photo = milestone(before, after)
+    const bonus = bonusText(before, after, { type: 'collect' }).trim()
+    if (error) setToast({ text: error, error: true })
+    else if (photo || bonus) setToast({ text: bonus || photo, photo })
+  }, [settled])
 
   useEffect(() => {
     if (!toast) return
@@ -381,6 +396,32 @@ export function Farm({ initialFarm, visitor = false }) {
 
   async function act(command, success, complete, effectIds) {
     if (busy.current || visitor) return false
+    const ids = command.ids ?? (command.id ? [command.id] : [])
+    const selected = new Set(ids)
+    const inScope = object => (selected.size === 0 || selected.has(object.id)) &&
+      (!command.parcel || parcelAt(object.x, object.z) === command.parcel)
+    const readyInScope = command.type === 'collect' ? ready.filter(inScope) : []
+    const fieldCollect = command.type === 'collect' && (command.kind === 'plot' ||
+      !command.kind && readyInScope.length > 0 && readyInScope.every(isBed))
+    if (command.type === 'plant' || fieldCollect) {
+      const result = fields.enqueue((shown, at) => {
+        if (!fieldCollect) return { type: 'plant', ids, crop: command.crop }
+        const targets = shown.objects.filter(object => isBed(object) && !object.stored && object.crop?.readyAt <= at && inScope(object))
+        if (!targets.length) return null
+        return { type: 'collect', ids: command.ids ? targets.map(object => object.id) : undefined,
+          fieldTargets: Object.fromEntries(targets.map(object => [object.id, cropIdentity(object)])) }
+      })
+      if (result.error) {
+        setToast({ text: result.error, error: true })
+        return false
+      }
+      play(command.type, 'plot')
+      controller.current?.react(command.type, fieldCollect ? Object.keys(result.command.fieldTargets) : ids)
+      if (!result.local) setToast({ text: '동기화되기 전에 화면을 닫으면 밭 작업이 사라질 수 있어요.', error: true })
+      else if (fieldCollect && result.command.ids?.length >= 10) setToast({ text: '🔥 콤보 ×' + result.command.ids.length })
+      complete?.()
+      return true
+    }
     // 낚시는 찌가 가라앉을 때 낚아채는 짧은 연출 뒤에 보낸다 (놓쳐도 아무것도 쓰지 않는다)
     if (command.type === 'fish' && !command.hooked) {
       setFishing({ command: { ...command, hooked: true }, success })
@@ -394,10 +435,10 @@ export function Farm({ initialFarm, visitor = false }) {
       : { ...command, requestId: crypto.randomUUID?.() ?? Date.now().toString(36) + Math.random().toString(36).slice(2) }
     const before = farm
     try {
+      if (!await fields.flush()) return false
       const result = await runFarmAction(request)
       if (result.farm) {
-        setFarm(result.farm)
-        setNow(result.farm.now)
+        fields.accept(result.farm)
       }
       if (result.error) {
         const conflict = /다른 화면|저장하지 못했/.test(result.error)
@@ -437,10 +478,10 @@ export function Farm({ initialFarm, visitor = false }) {
   }
 
   useEffect(() => {
-    if (pending || !workerKey || checkedWorker.current === workerKey) return
+    if (pending || fields.hasQueued || !workerKey || checkedWorker.current === workerKey) return
     checkedWorker.current = workerKey
     act({ type: 'view' }, '일꾼이 익은 작물을 창고에 담았어요.')
-  }, [pending, workerKey])
+  }, [pending, fields.hasQueued, workerKey])
 
   function open(type, values = {}) {
     setPanel({ type, ...values })
@@ -879,8 +920,9 @@ export function Farm({ initialFarm, visitor = false }) {
         onMiss={() => { setFishing(null); setToast({ text: '물고기가 도망갔어요. 다시 던져 보세요.' }) }}
         onCatch={() => { const { command, success } = fishing; setFishing(null); act(command, success) }} />}
 
-      <div className={'farm-toast' + (toast?.error ? ' error' : '')} aria-live="polite">
-        {pending ? '저장 중…' : toast?.text}
+      <div className={'farm-toast' + (toast?.error || fields.sync ? ' error' : '')} aria-live="polite">
+        {toast?.text ?? fields.sync?.text}
+        {!toast && fields.sync && <button type="button" onClick={fields.flush}>다시 시도</button>}
         {!pending && toast?.retry && <button type="button" onClick={() => retry(toast.retry)}>다시 시도</button>}
         {!pending && toast?.reload && <button type="button" onClick={() => act({ type: 'view' }, '최신 상태를 불러왔어요')}>최신 상태 불러오기</button>}
         {!pending && toast?.photo && <button type="button" onClick={() => { setToast(null); setPhoto(true) }}>{toast.photo} 사진 남기기</button>}

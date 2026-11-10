@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { accountId, internalEmail, validPassword, newRecoveryCode, recoveryDigest } from '../lib/credentials.mjs'
 import { adminClient, gameConfigured, sessionClient } from '../lib/supabase'
 import { FarmError } from '../lib/farm-game.mjs'
-import { createNamedFarm, farmAccount, runForAccount, visitFarm } from '../lib/farm-storage'
+import { createNamedFarm, farmAccount, runForAccount, saveFieldBatch, visitFarm } from '../lib/farm-storage'
 
 const setupMessage = '농장 서버의 접속 설정이 필요해요.'
 const authError = 'ID와 비밀번호를 다시 확인해 주세요.'
@@ -89,6 +89,16 @@ export async function runFarmAction(command) {
     return farm ? { farm } : { error: '먼저 내 농장을 만들어 주세요.' }
   } catch (error) {
     return { error: error instanceof FarmError ? error.message : '변경을 저장하지 못했어요. 다시 시도해 주세요.' }
+  }
+}
+
+export async function runFieldActions(accountId, commands) {
+  try {
+    const account = await farmAccount()
+    if (!account || account.id !== accountId) return { blocked: '밭 작업을 저장하려면 같은 계정으로 다시 로그인해 주세요.' }
+    return await saveFieldBatch(account, commands)
+  } catch {
+    return { retry: true }
   }
 }
 

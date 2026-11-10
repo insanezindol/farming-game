@@ -7,7 +7,7 @@ import { signOut } from './actions'
 
 const accountFarm = cache(async () => {
   const account = await farmAccount()
-  return account ? { farm: await runForAccount(account) } : null
+  return account ? { accountId: account.id, farm: await runForAccount(account) } : null
 })
 
 export async function generateMetadata() {
@@ -38,5 +38,5 @@ export default async function Page({ searchParams }) {
   if (!view) return <Login returnTo={returnTo} />
   if (!view.farm) return <FarmSetup returnTo={returnTo} />
   if (returnTo) redirect(returnTo)
-  return <Farm initialFarm={view.farm} />
+  return <Farm key={view.accountId} initialFarm={view.farm} accountId={view.accountId} />
 }
