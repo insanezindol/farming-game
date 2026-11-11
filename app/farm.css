@@ -54,6 +54,8 @@
 .farm-avatar-colors button[aria-pressed=true] { box-shadow: 0 0 0 3px #71573d; }
 .farm-avatar-items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
 .farm-avatar-items button[aria-pressed=true] { outline: 2px solid #a57e4e; outline-offset: -2px; }
+.farm-herd { display: grid; gap: 5px; margin: 10px 0; }
+.farm-herd small { color: var(--farm-muted); }
 .farm-identity {
   max-width: min(53vw, 340px);
   padding: 6px 7px 6px 6px;

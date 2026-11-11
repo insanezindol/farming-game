@@ -9,6 +9,7 @@ import { batchKinds, buildings, crops, recipes } from '../lib/farm-catalog.mjs'
 import { parcelAt, canPlace, footprint, inMap, objectsUnder, terrainAt, MAP_SIZE, PARCEL_SIZE } from '../lib/farm-layout.mjs'
 import { goldenCheck } from '../lib/farm-luck.mjs'
 import { cropIdentity, fieldGuest } from '../lib/farm-game.mjs'
+import { productionCount } from '../lib/farm-livestock.mjs'
 import {
   FarmButton, FarmMap, TileGrid, Shop, Seeds, Inventory, Orders, Progress, ObjectPanel, Peddler,
   Settings, ParcelPanel, TerrainPanel, Help, objectName, terrainTileLabel, isReady, remainingTime, productBook, josa,
@@ -85,7 +86,7 @@ function returnSummary(farm, now) {
   for (const [kind, count] of Object.entries(fields)) parts.push(`${crops[kind]?.name} ${count}칸이 익었고`)
   for (const object of ready) {
     const item = buildings[object.kind]
-    if (item?.product) parts.push(`${objectName(object)}에 ${productBook[item.product]?.name} ${object.level || 1}개가 있고`)
+    if (item?.product) parts.push(`${objectName(object)}에 ${productBook[item.product]?.name} ${productionCount(object)}개가 있고`)
     else if (!object.crop) parts.push(`${objectName(object)}에 가공품이 완성됐고`)
   }
   if (!parts.length) {
@@ -112,7 +113,7 @@ function upcoming(objects, now) {
     const at = product ? object.readyAt : object.queue?.[0]?.readyAt
     if (!at) continue
     const item = productBook[product ?? recipeProduct(object.queue[0].recipe)]
-    entries.push({ key: object.id, icon: item?.icon, name: item?.name, count: product ? object.level || 1 : object.queue.filter(job => job.readyAt <= Math.max(now, at)).length, at, target: object })
+    entries.push({ key: object.id, icon: item?.icon, name: item?.name, count: product ? productionCount(object) : object.queue.filter(job => job.readyAt <= Math.max(now, at)).length, at, target: object })
   }
   return [...Object.values(fields), ...entries].sort((a, b) => a.at - b.at).slice(0, 3)
 }

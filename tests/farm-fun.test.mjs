@@ -36,7 +36,7 @@ test('golden crops are decided by the server seed and a sweep combo pays bonus x
   assert.equal(roll('a', 1), roll('a', 1))
 })
 
-test('petting and treats build hearts with a daily cap and unlock name tags', () => {
+test('petting and treats build shared hearts with a daily cap', () => {
   let farm = { ...createFarm('testfarmer', at), inventory: { carrot: 20 } }
   farm = run(farm, 'place', { kind: 'coop', x: 13, z: 20 })
   const coop = farm.objects.find(object => object.kind === 'coop')
@@ -48,7 +48,6 @@ test('petting and treats build hearts with a daily cap and unlock name tags', ()
   for (let i = 0; i < 6; i++) farm = run(farm, 'feed', { id: coop.id }, at + (i + 1) * 61000)
   assert.equal(farm.objects.find(object => object.id === coop.id).love, 10)
   assert.equal(hearts(farm.objects.find(object => object.id === coop.id)), 1)
-  assert.throws(() => run(farm, 'tag', { id: coop.id, color: '#ff8899' }), /하트 3개/)
 })
 
 test('fishing records the species size and forage luck is repeatable', () => {

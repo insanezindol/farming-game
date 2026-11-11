@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { signOut } from './actions'
 import { achievements, buildings, collectionSets, crops, products, recipes, seasonCrops } from '../lib/farm-catalog.mjs'
 import { levelProgress, maxLevel } from '../lib/farm-game.mjs'
+import { feedCost, isLivestock, livestockCapacity, livestockCount, livestockTypes, productionCount } from '../lib/farm-livestock.mjs'
 import { canExpand, parcelAt, parcelPrice, terrainAt, footprint, PARCEL_SIZE, MAP_SIZE } from '../lib/farm-layout.mjs'
 
 export const productBook = { ...crops, ...products }
 const categories = { farm: '농사', animal: '가축', artisan: '가공', decoration: '장식', utility: '시설' }
 const terrainNames = { tree: '나무', rock: '바위', water: '물', mushroom: '버섯', wildberry: '산딸기', wood: '나뭇가지' }
 const colorChoices = ['#c77b54', '#d7aa55', '#789461', '#678f9d', '#a77590', '#ede0b5']
-const tagColors = ['#ff8fab', '#ffd166', '#8bd3c7', '#a0c4ff', '#cdb4f6']
 const friendNames = ['처음 만난 이웃', '아는 사이', '친한 이웃', '단짝']
 const friendSteps = [3, 6, 10]
 const neighborNames = { sundeok: '순덕 할머니', minho: '민호 사장', yuna: '유나 선생님' }
@@ -432,14 +432,18 @@ function ObjectRecipes({ object, farm, now, act }) {
 
 export function ObjectPanel({ object, farm, now, visitor, act, edit, move, store }) {
   const [customize, setCustomize] = useState(false)
-  const [animalNumber, setAnimalNumber] = useState(1)
   const item = buildings[object.kind]
   const ready = isReady(object, now)
   if (!item) return null
   const animal = item.category === 'animal'
+  const pen = isLivestock(object)
+  const count = livestockCount(object)
+  const capacity = livestockCapacity(object)
+  const quantity = productionCount(object)
+  const foodNeeded = feedCost(object)
   const fishAt = farm.cooldowns?.['fish:' + object.id] ?? 0
   const upgradePrice = Math.max(12, item.price) * object.level
-  if (visitor) return <p>{item.icon} {item.name} · Lv. {object.level || 1}</p>
+  if (visitor) return <p>{item.icon} {item.name} · Lv. {object.level || 1}{pen ? ' · ' + livestockTypes[object.kind].name + ' ' + count + ' / ' + capacity + '마리' : ''}</p>
   if (object.kind === 'market' && !edit) return <Inventory farm={farm} act={act} />
   return <>
     {['plot', 'greenhouse'].includes(object.kind) && !object.crop && !edit &&
@@ -449,46 +453,40 @@ export function ObjectPanel({ object, farm, now, visitor, act, edit, move, store
       onClick={() => act({ type: 'fertilize', id: object.id }, '퇴비를 줬어요. 바로 거둘 수 있어요!')}>🟫 퇴비 주기 · {farm.inventory.compost}개</FarmButton>}
     {object.crop && !ready && !object.crop.watered && !edit && <FarmButton
       onClick={() => act({ type: 'water', ids: [object.id] }, '물을 줬어요. 30% 빨리 자라요.')}>💧 물 주기</FarmButton>}
-    {item.product && <p>{productBook[item.product]?.name} · {ready ? '모을 수 있어요.' : object.readyAt ? remainingTime(object.readyAt - now) + ' 남았어요.' : '준비 중'}</p>}
+    {pen && <div className="farm-herd">
+      <strong>{livestockTypes[object.kind].name} {count} / {capacity}마리</strong>
+      {count > quantity && <small>추가한 {count - quantity}마리는 다음 생산부터 참여해요.</small>}
+    </div>}
+    {item.product && <p>이번 생산: {productBook[item.product]?.name} 기본 {quantity}개 · {ready ? '모을 수 있어요.' : object.readyAt ? remainingTime(object.readyAt - now) + ' 남았어요.' : '준비 중'}</p>}
     {ready && <button type="button" className="primary"
-      onClick={() => act({ type: 'collect', id: object.id }, '창고에 담았어요.')}>{object.crop ? '수확하기' : '생산물 받기'}</button>}
+      onClick={() => act({ type: 'collect', id: object.id }, '창고에 담았어요.')}>{object.crop ? '수확하기' : '생산물 모두 받기'}</button>}
+    {pen && !edit && <>
+      <FarmButton disabled={count >= capacity || farm.coins < livestockTypes[object.kind].price}
+        onClick={() => act({ type: 'addAnimal', id: object.id }, livestockTypes[object.kind].name + ' 1마리를 맞이했어요. 다음 생산부터 참여해요.')}>
+        {livestockTypes[object.kind].name} 추가하기 · ✦ {livestockTypes[object.kind].price}
+      </FarmButton>
+      {count >= capacity && <p><small>축사가 가득 찼어요. 편집에서 증축하면 더 키울 수 있어요.</small></p>}
+    </>}
     {!edit && <ObjectRecipes object={object} farm={farm} now={now} act={act} />}
     {!edit && animal && <div className="farm-hearts" aria-label={'애정도 하트 ' + hearts(object) + '개'}>
       <span aria-hidden="true">{'♥'.repeat(hearts(object))}{'♡'.repeat(5 - hearts(object))}</span>
-      <small>{hearts(object) >= 5 ? '최고의 단짝이에요!' : `쓰다듬기와 간식으로 하트가 쌓여요 (${(object.love ?? 0) % 10}/10) · 하트가 많을수록 가끔 하나 더 줘요`}</small>
-    </div>}
-    {!edit && animal && hearts(object) >= 3 && <div className="farm-colors" aria-label="이름표 색">
-      {tagColors.map((color, index) => <button key={color} type="button" aria-label={`이름표 색 ${index + 1}`}
-        aria-pressed={object.tag === color} style={{ backgroundColor: color }} onClick={() => act({ type: 'tag', id: object.id, color }, '이름표를 꾸몄어요.')} />)}
+      <small>{hearts(object) >= 5 ? '최고의 단짝이에요!' : '친밀도가 높으면 가끔 생산물을 하나 더 줘요.'}</small>
     </div>}
     {!edit && (animal || object.kind === 'pond') && <div className="farm-actions">
       {animal && <>
         <FarmButton onClick={() => act({ type: 'pet', id: object.id }, '가축과 인사했어요.')}>쓰다듬기</FarmButton>
-        {['carrot', 'wheat'].map(food => <FarmButton key={food} disabled={!farm.inventory[food] || ready || object.fedAt > now - 60000}
-          onClick={() => act({ type: 'feed', id: object.id, item: food }, '먹이를 줬어요.')}>먹이 · {productBook[food].name} 1개</FarmButton>)}
+        {['carrot', 'wheat'].map(food => <FarmButton key={food} disabled={(farm.inventory[food] ?? 0) < foodNeeded || ready || object.fedAt > now - 60000}
+          onClick={() => act({ type: 'feed', id: object.id, item: food }, '축사에 먹이를 줬어요.')}>먹이 · {productBook[food].name} {foodNeeded}개</FarmButton>)}
       </>}
       {['pond', 'duckpond'].includes(object.kind) && <FarmButton disabled={fishAt > now}
         onClick={() => act({ type: 'fish', id: object.id }, '물고기를 잡았어요.')}>{fishAt > now ? '낚시까지 ' + remainingTime(fishAt - now) : '낚시'}</FarmButton>}
     </div>}
-    {!edit && item.animalModel && <form className="farm-inline-form" onSubmit={event => {
-      event.preventDefault()
-      act({ type: 'renameAnimal', id: object.id, animal: animalNumber,
-        name: new FormData(event.currentTarget).get('name') }, '가축 이름을 저장했어요.')
-    }}>
-      <label><span>가축 선택</span><select value={animalNumber} onChange={event => setAnimalNumber(Number(event.target.value))}
-        style={object.tag ? { borderColor: object.tag, boxShadow: '0 0 0 2px ' + object.tag } : undefined}>
-        {Array.from({ length: object.level }, (_, index) => index + 1).map(number =>
-          <option key={number} value={number}>{object.animalNames?.[number] || number + '번 가축'}</option>)}
-      </select></label>
-      <label><span>가축 이름</span><input key={animalNumber} name="name" maxLength="20" defaultValue={object.animalNames?.[animalNumber] || ''} required /></label>
-      <button className="primary">이름 저장</button>
-    </form>}
     {edit && <div className="farm-actions">
       <FarmButton onClick={move}>옮기기</FarmButton>
       <FarmButton onClick={store}>보관</FarmButton>
       <FarmButton active={customize} onClick={() => setCustomize(!customize)}>꾸미기</FarmButton>
       {maxLevel(object) > 1 && <FarmButton disabled={object.level >= maxLevel(object) || farm.coins < upgradePrice}
-        onClick={() => act({ type: 'upgrade', id: object.id }, animal ? '축사를 증축했어요. 한 번에 하나 더 생산해요.' : '공방을 증축했어요. 예약 +2칸, 제작 10% 빨라요.')}>
+        onClick={() => act({ type: 'upgrade', id: object.id }, pen ? '축사를 증축했어요. 가축을 2마리 더 키울 수 있어요.' : animal ? '벌통을 증축했어요. 생산량이 늘었어요.' : '공방을 증축했어요. 예약 +2칸, 제작 10% 빨라요.')}>
         {object.level >= maxLevel(object) ? '최대 레벨' : '증축 · ✦ ' + upgradePrice}</FarmButton>}
     </div>}
     {edit && customize && <>

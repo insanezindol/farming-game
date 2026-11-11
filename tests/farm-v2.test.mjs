@@ -40,9 +40,6 @@ test('multiple coops produce independently and keep production while moving', ()
   farm = run(farm, 'collect', { kind: 'animal' }, first.readyAt)
   assert.equal(farm.inventory.egg, 1)
   assert.equal(farm.objects.find(object => object.id === second.id).readyAt, second.readyAt)
-  farm = run(farm, 'renameAnimal', { id: first.id, animal: 1, name: '뽀송' })
-  assert.equal(farm.objects.find(object => object.id === first.id).animalNames[1], '뽀송')
-  assert.throws(() => run(farm, 'renameAnimal', { id: first.id, animal: 2, name: '두번째' }), /수량/)
 })
 
 test('contributions consume only the guest inventory and a visit snapshot omits private state', () => {
