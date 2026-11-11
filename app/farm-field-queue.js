@@ -1,17 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { applyFieldCommand, FIELD_BATCH_SIZE } from '../lib/farm-game.mjs'
+import { applyFieldCommand, projectFarmCommands, FIELD_BATCH_SIZE } from '../lib/farm-game.mjs'
 import { runFieldActions } from './actions'
-
-function project(farm, commands) {
-  for (const command of commands) {
-    try {
-      farm = applyFieldCommand(farm, command, Number(command.requestId.slice(0, 13)), true)
-    } catch {
-      // A newer server snapshot can invalidate an outstanding action. The server reports its outcome.
-    }
-  }
-  return farm
-}
 
 export function useFarmFieldQueue(initialFarm, accountId) {
   const prefix = `muyaho:field:${accountId}:`
@@ -26,7 +15,7 @@ export function useFarmFieldQueue(initialFarm, accountId) {
   const [sync, setSync] = useState(null)
   const [settled, setSettled] = useState(null)
   const hasQueued = Boolean(queued.length)
-  const farm = useMemo(() => project(confirmed, queued), [confirmed, queued])
+  const farm = useMemo(() => projectFarmCommands(confirmed, queued), [confirmed, queued])
 
   const accept = useCallback(next => {
     if ((next.requestVersion ?? 0) < (base.current.requestVersion ?? 0)) return
@@ -49,7 +38,7 @@ export function useFarmFieldQueue(initialFarm, accountId) {
         }
         if (!result?.farm) {
           setSync({
-            text: result?.blocked ?? '연결되면 밭 작업을 저장할게요.',
+            text: result?.blocked ?? '연결되면 농장 작업을 저장할게요.',
             retryAt: result?.blocked ? null : Date.now() + delay.current,
           })
           delay.current = Math.min(delay.current * 2, 15000)
@@ -97,21 +86,22 @@ export function useFarmFieldQueue(initialFarm, accountId) {
   }, [accountId, prefix, flush])
 
   useEffect(() => {
-    if (!accountId || !hasQueued || sync?.retryAt === null) return
+    if (!accountId || !queued.length || sync?.retryAt === null) return
     const timer = window.setTimeout(flush, sync ? Math.max(0, sync.retryAt - Date.now()) : 75)
     return () => window.clearTimeout(timer)
-  }, [accountId, hasQueued, sync, flush])
+  }, [accountId, queued, sync, flush])
 
   function enqueue(build) {
     const now = base.current.now + (Date.now() - clock.current)
-    const shown = project(base.current, commands.current)
+    const shown = projectFarmCommands(base.current, commands.current)
     const next = build(shown, now)
-    if (!next) return { error: '이 밭에서 할 수 있는 작업이 없어요.' }
+    if (!next) return { error: '지금 할 수 있는 작업이 없어요.' }
     lastIssued.current = Math.max(now, lastIssued.current + 1)
     const nonce = crypto.randomUUID?.() ?? Math.random().toString(36).slice(2).padEnd(12, '0')
-    const command = { ...next, requestId: `${lastIssued.current}_${nonce}` }
+    const command = { ...next, nextId: shown.nextId, requestId: `${lastIssued.current}_${nonce}` }
+    let after
     try {
-      applyFieldCommand(shown, command, lastIssued.current, true)
+      after = applyFieldCommand(shown, command, lastIssued.current, true)
     } catch (error) {
       return { error: error.message }
     }
@@ -123,8 +113,8 @@ export function useFarmFieldQueue(initialFarm, accountId) {
     }
     commands.current = [...commands.current, command]
     setQueued(commands.current)
-    return { command, local }
+    return { command, local, before: shown, farm: after }
   }
 
-  return { farm, confirmed, accept, enqueue, flush, hasQueued, sync, settled }
+  return { farm, confirmed, accept, enqueue, flush, hasQueued, queuedCount: queued.length, sync, settled }
 }

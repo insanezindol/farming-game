@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useRef, useState } from 'react'
 import { crops, products } from '../lib/farm-catalog.mjs'
 import { runFarmSocial } from './actions'
+import { previewVisitCommand, projectVisitCommands } from '../lib/farm-visit-queue.mjs'
 import { zoneCharm } from './farm-panels'
 
 const productName = key => (products[key] ?? crops[key])?.name ?? key
@@ -19,20 +20,49 @@ const messageText = (farm, row) => <><strong>{row.from}</strong>{zoneLabel(farm,
 
 function GuestSocial({ farm, scene }) {
   const [view, setView] = useState(farm)
-  const [pending, startTransition] = useTransition()
+  const confirmed = useRef(farm)
+  const tasks = useRef([])
+  const sending = useRef(false)
+  const [queued, setQueued] = useState(0)
   const [result, setResult] = useState('')
   const giftItems = Object.keys(view.guestInventory ?? {}).filter(item => view.guestInventory[item] > 0)
 
   function send(command, success) {
-    startTransition(async () => {
-      try {
-        const response = await runFarmSocial(view.visitCode, command)
-        if (response.farm) setView(response.farm)
-        setResult(response.error ?? success)
-      } catch {
-        setResult('연결을 확인한 뒤 다시 시도해 주세요.')
+    const at = Date.now()
+    try { previewVisitCommand(projectVisitCommands(confirmed.current, tasks.current), command, at) }
+    catch (error) { setResult(error.message); return }
+    tasks.current.push({ command, success, at })
+    refresh()
+    void drain()
+  }
+
+  function refresh() {
+    setView(projectVisitCommands(confirmed.current, tasks.current))
+    setQueued(tasks.current.length)
+  }
+
+  async function drain() {
+    if (sending.current) return
+    sending.current = true
+    try {
+      while (tasks.current.length) {
+        const { command, success } = tasks.current[0]
+        try {
+          const response = await runFarmSocial(farm.visitCode, command)
+          if (response.farm) confirmed.current = response.farm
+          setResult(response.error ?? success)
+        } catch {
+          // shortcut: visitor queues stay in memory; add pair-write receipts before replaying them after reload.
+          try {
+            const response = await runFarmSocial(farm.visitCode, { type: 'visit' })
+            if (response.farm) confirmed.current = response.farm
+          } catch { /* later submissions are still checked by the server */ }
+          setResult('연결이 끊겨 결과를 확인하지 못했어요. 방문 기록을 확인해 주세요.')
+        }
+        tasks.current.shift()
+        refresh()
       }
-    })
+    } finally { sending.current = false }
   }
 
   return (
@@ -59,7 +89,7 @@ function GuestSocial({ farm, scene }) {
             {farm.parcels.map(parcel => <option key={parcel} value={parcel}>{zoneLabel(farm, parcel).slice(3)}</option>)}
           </select></label>
           <label>짧은 감상 남기기<input name="message" maxLength={120} required /></label>
-          <button type="submit" disabled={pending}>남기기</button>
+          <button type="submit">남기기</button>
         </form>
         <h3>선물 보내기</h3>
         {giftItems.length ? <form onSubmit={event => {
@@ -68,14 +98,14 @@ function GuestSocial({ farm, scene }) {
         }}>
           <label htmlFor="visit-gift-item">선물</label>
           <select id="visit-gift-item" name="item">{giftItems.map(item => <option value={item} key={item}>{productName(item)} {view.guestInventory[item]}개</option>)}</select>
-          <button type="submit" disabled={pending}>1개 보내기</button>
+          <button type="submit">1개 보내기</button>
         </form> : <p>내 창고에 선물할 물건이 없어요.</p>}
         <h3>주문 돕기</h3>
         {view.orders.filter(order => !order.done).map(order => (
           <section key={order.id}>
             <strong>{order.name}</strong>
             {Object.entries(order.items).map(([item, quantity]) => (
-              <button type="button" key={item} disabled={pending || !giftItems.includes(item) || (order.shared?.[item] ?? 0) >= quantity}
+              <button type="button" key={item} disabled={!giftItems.includes(item) || (order.shared?.[item] ?? 0) >= quantity}
                 onClick={() => send({ type: 'assist', id: order.id, item }, productName(item) + ' 1개를 주문에 보냈어요.')}>
                 {productName(item)} {order.shared?.[item] ?? 0}/{quantity} · 보내기
               </button>
@@ -83,7 +113,7 @@ function GuestSocial({ farm, scene }) {
           </section>
         ))}
       </> : <p><a href={'/?visit=' + view.visitCode}>{view.needsFarm ? '내 농장 만들고 방문하기' : '로그인하고 방문하기'}</a> · 방명록과 선물을 이용할 수 있어요.</p>}
-      <p role="status">{pending ? '저장 중…' : result}</p>
+      <p role="status">{result}{queued > 0 && <small> · 저장 중 {queued}건</small>}</p>
     </div>
   )
 }
@@ -112,13 +142,14 @@ function Helpers({ farm, act }) {
 export function FarmSocial({ farm, visitor, act, scene }) {
   const [copied, setCopied] = useState('')
   if (visitor) return <GuestSocial farm={farm} scene={scene} />
-  const url = farm.share?.enabled ? '/visit/' + farm.share.code : ''
+  const enabled = Boolean(farm.share?.enabled)
+  const url = enabled && farm.share.code ? '/visit/' + farm.share.code : ''
   return (
     <div className="farm-social">
       <h3>방문 공개 범위</h3>
-      <p>{url ? '초대 링크를 가진 사람이 농장을 볼 수 있어요.' : '현재 내 농장은 비공개예요.'}</p>
-      <button type="button" onClick={() => act({ type: 'share', enabled: !url }, url ? '방문을 닫았어요.' : '초대 링크를 열었어요.')}>
-        {url ? '방문 닫기' : '초대 링크 열기'}
+      <p>{url ? '초대 링크를 가진 사람이 농장을 볼 수 있어요.' : enabled ? '초대 링크를 준비하고 있어요.' : '현재 내 농장은 비공개예요.'}</p>
+      <button type="button" onClick={() => act({ type: 'share', enabled: !enabled }, enabled ? '방문을 닫았어요.' : '초대 링크를 열었어요.')}>
+        {enabled ? '방문 닫기' : '초대 링크 열기'}
       </button>
       {url && <div className="social-link">
         <a href={url} target="_blank" rel="noreferrer">방문 화면 보기</a>

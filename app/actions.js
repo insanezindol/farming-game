@@ -95,7 +95,7 @@ export async function runFarmAction(command) {
 export async function runFieldActions(accountId, commands) {
   try {
     const account = await farmAccount()
-    if (!account || account.id !== accountId) return { blocked: '밭 작업을 저장하려면 같은 계정으로 다시 로그인해 주세요.' }
+    if (!account || account.id !== accountId) return { blocked: '농장 작업을 저장하려면 같은 계정으로 다시 로그인해 주세요.' }
     return await saveFieldBatch(account, commands)
   } catch {
     return { retry: true }

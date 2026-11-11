@@ -42,6 +42,7 @@
   min-width: 0;
 }
 .farm-hud button, .farm-tools button { pointer-events: auto; }
+.farm-sync { font-size: .7rem; color: var(--farm-muted); white-space: nowrap; }
 .farm-identity {
   max-width: min(53vw, 340px);
   padding: 6px 7px 6px 6px;
