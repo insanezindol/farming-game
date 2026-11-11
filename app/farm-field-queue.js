@@ -53,7 +53,8 @@ export function useFarmFieldQueue(initialFarm, accountId) {
         for (const id of saved) {
           try { localStorage.removeItem(prefix + id) } catch { /* an acknowledged copy can be replayed safely */ }
         }
-        setSettled({ before, after: result.farm, error: result.errors.find(Boolean) })
+        setSettled({ before, after: result.farm, error: result.errors.find(Boolean),
+          rejectedIds: batch.filter((_, index) => result.errors[index]).map(command => command.requestId) })
         delay.current = 1500
         setSync(null)
       }

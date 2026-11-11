@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useFarmFieldQueue } from './farm-field-queue'
 import { Mark } from './art'
 import { FarmSocial } from './farm-social'
+import { AvatarWardrobe } from './farm-avatar'
 import { batchKinds, buildings, crops, recipes } from '../lib/farm-catalog.mjs'
 import { parcelAt, canPlace, footprint, inMap, objectsUnder, terrainAt, MAP_SIZE, PARCEL_SIZE } from '../lib/farm-layout.mjs'
 import { goldenCheck } from '../lib/farm-luck.mjs'
@@ -15,7 +16,7 @@ import {
 import './farm.css'
 
 const panelTitles = {
-  shop: '건설 상점', map: '농장 지도', bag: '창고', orders: '주문서', settings: '설정',
+  shop: '건설 상점', map: '농장 지도', bag: '창고', orders: '주문서', settings: '설정', avatar: '농장주 꾸미기',
   progress: '농장 기록', seeds: '씨앗 주머니', planting: '파종할 작물 선택', collect: '생산물 모으기', help: '농장 안내', share: '농장 방문', peddler: '떠돌이 상인',
 }
 const terrainWords = { tree: '나무', rock: '바위', water: '물' }
@@ -352,6 +353,7 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
   useEffect(() => {
     if (!settled) return
     const { before, after, error } = settled
+    if (settled.rejectedIds?.length) controller.current?.avatarCancel(settled.rejectedIds)
     if (after.level > before.level && after.levelGift) setGift(after.levelGift)
     if (after.coins > before.coins) setCoinPop({ value: after.coins - before.coins, key: Date.now() })
     const photo = milestone(before, after)
@@ -456,6 +458,7 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
     play(command.type, kind, beds || 1)
     if (beds && farm.settings?.motion !== false) navigator.vibrate?.(beds > 1 ? [12, 40, 18] : 12)
     controller.current?.react(command.type, effectIds ?? ids)
+    controller.current?.avatarReact(after, result.command, ids)
     if (success) {
       const caught = command.type === 'fish' && after.lastCatch
       const record = caught && caught.size > (before.records?.[caught.item] ?? 0) && before.records?.[caught.item]
@@ -482,6 +485,7 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
 
   function open(type, values = {}) {
     setPanel({ type, ...values })
+    if (!visitor && !edit && type === 'object' && values.id) controller.current?.avatarReact(farm, { type: 'inspect', id: values.id })
   }
 
   function selectParcel(key) {
@@ -587,8 +591,10 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
         return
       }
       if (isBed(selected) && !selected.crop) return seed([id])
-      if (selected.kind === 'truck') return open('orders')
-      if (['market', 'house'].includes(selected.kind)) return open('bag')
+      if (['truck', 'market', 'house'].includes(selected.kind)) {
+        controller.current?.avatarReact(farm, { type: 'inspect', id })
+        return open(selected.kind === 'truck' ? 'orders' : 'bag')
+      }
     }
     if (id) open('object', { id })
     else open('terrain', { tile: { x, z } })
@@ -709,6 +715,7 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
   }
 
   function seed(ids) {
+    if (ids.length === 1) controller.current?.avatarReact(farm, { type: 'inspect', id: ids[0] })
     open('seeds', { ids })
   }
 
@@ -835,6 +842,7 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
             <FarmButton icon="photo" className="farm-square" aria-label="사진 모드" disabled={status !== 'ready'}
               onClick={() => setPhoto(true)} />
             <FarmButton icon="help" className="farm-square" aria-label="농장 안내" onClick={() => open('help')} />
+            {!visitor && <FarmButton className="farm-square" aria-label="농장주 꾸미기" onClick={() => open('avatar')}>👒</FarmButton>}
           </div>
         </aside>
 
@@ -901,6 +909,7 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
           {panel.type === 'progress' && <Progress farm={farm} act={act} />}
           {panel.type === 'help' && <Help />}
           {panel.type === 'settings' && <Settings farm={farm} visitor={visitor} act={act} scene={controller.current} full={canFullscreen ? fullscreen : null} />}
+          {panel.type === 'avatar' && !visitor && <AvatarWardrobe farm={farm} act={act} scene={controller.current} />}
           {panel.type === 'share' && <FarmSocial farm={farm} visitor={visitor} act={act} scene={controller.current} />}
           {panel.type === 'map' && <>
             <p>{farm.parcels.length} / {(MAP_SIZE / PARCEL_SIZE) ** 2} 구역{seasonNames[farm.season] ? ' · ' + seasonNames[farm.season] + ' · ' + weatherNames[farm.weather] : ''}</p>

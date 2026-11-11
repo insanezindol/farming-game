@@ -42,7 +42,18 @@
   min-width: 0;
 }
 .farm-hud button, .farm-tools button { pointer-events: auto; }
-.farm-sync { font-size: .7rem; color: var(--farm-muted); white-space: nowrap; }
+.farm-sync { position: absolute; right: 0; top: 52px; padding: 3px 7px; border-radius: 8px; background: var(--farm-panel); font-size: .7rem; color: var(--farm-muted); white-space: nowrap; }
+.farm-avatar-bubble { position: absolute; z-index: 3; transform: translate(-50%, -100%); max-width: 180px; padding: 8px 12px; border: 2px solid #e7d7b6; border-radius: 18px 18px 18px 4px; background: #fff9e9; color: #60452e; box-shadow: 0 3px 10px #49322720; font-size: .76rem; font-weight: 700; pointer-events: none; text-align: center; }
+.farm-avatar-bubble[hidden] { display: none; }
+.farm-avatar-preview { height: 220px; overflow: hidden; border-radius: 24px; background: radial-gradient(ellipse at 50% 85%, #d3e3b6 0, #edf3d7 45%, #fff5e0 100%); display: grid; place-items: center; }
+.farm-avatar-preview canvas { display: block; max-width: 100%; }
+.farm-avatar-choice { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; }
+.farm-avatar-colors { border: 0; padding: 0; margin: 16px 0; display: flex; gap: 10px; }
+.farm-avatar-colors legend { font-size: .8rem; margin-bottom: 7px; }
+.farm-avatar-colors button { min-height: 32px; width: 32px; border-radius: 50%; border: 3px solid #fff8e6; box-shadow: 0 0 0 1px #dac6a1; }
+.farm-avatar-colors button[aria-pressed=true] { box-shadow: 0 0 0 3px #71573d; }
+.farm-avatar-items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.farm-avatar-items button[aria-pressed=true] { outline: 2px solid #a57e4e; outline-offset: -2px; }
 .farm-identity {
   max-width: min(53vw, 340px);
   padding: 6px 7px 6px 6px;
