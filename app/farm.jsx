@@ -331,6 +331,7 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
   const selectedGroup = useMemo(() => group.filter(id => visible.some(object => object.id === id)), [group, visible])
   const object = panel?.id ? visible.find(item => item.id === panel.id) : null
   const empty = visible.filter(item => isBed(item) && !item.crop && parcelAt(item.x, item.z) === parcel).map(item => item.id)
+  const allEmpty = visible.filter(item => isBed(item) && !item.crop).map(item => item.id)
   const ready = visible.filter(item => isReady(item, now))
   const moving = useMemo(() => placement?.ids ? placement.ids.map(id => farm.objects.find(item => item.id === id)).filter(Boolean) : [],
     [farm.objects, placement?.ids])
@@ -651,7 +652,11 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
     }
     const crop = crops[tool.crop]
     const affordable = Math.floor(farm.coins / crop.seed)
-    const ids = beds.filter(item => !item.crop).map(item => item.id).slice(0, affordable)
+    const anchor = beds[0]
+    const rowBeds = tool.row && anchor
+      ? visible.filter(item => isBed(item) && !item.crop && item.z === anchor.z && parcelAt(item.x, item.z) === parcelAt(anchor.x, anchor.z))
+      : beds
+    const ids = rowBeds.filter(item => !item.crop).map(item => item.id).slice(0, affordable)
     if (ids.length) act({ type: 'plant', ids, crop: tool.crop }, crop.name + ' ' + ids.length + '칸을 심었어요.')
     else setToast({ text: affordable ? '지나간 곳에 빈 밭이 없어요.' : '씨앗을 살 코인이 부족해요.' })
   }
@@ -881,9 +886,11 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
         {!visitor && !edit && !panel && status === 'ready' && <div className="farm-quick" role="toolbar" aria-label="쓸어서 심기와 수확">
           <FarmButton active={tool === 'harvest'} onClick={() => chooseTool('harvest')}>🌾 낫</FarmButton>
           <FarmButton active={tool === 'water'} onClick={() => chooseTool('water')}>💧 물뿌리개</FarmButton>
+          <FarmButton disabled={!allEmpty.length} onClick={() => seed(allEmpty)}>빈 밭 모두 심기</FarmButton>
           {seedChoices.map(crop => <FarmButton key={crop} active={tool?.crop === crop} disabled={farm.coins < crops[crop].seed}
             onClick={() => chooseTool({ crop })}>{crops[crop].icon} {crops[crop].name}{inSeason(farm, crop) ? ' · 제철' : ''}</FarmButton>)}
-          {tool && <small>{tool === 'harvest' ? '익은 밭을 손가락으로 쓸어 거둬요' : tool === 'water' ? '자라는 밭을 쓸면 30% 빨리 자라요 (한 번씩)' : '빈 밭을 쓸어 심어요 · 칸당 ✦ ' + crops[tool.crop].seed}</small>}
+          <FarmButton active={Boolean(tool?.row)} disabled={!tool?.crop} onClick={() => setTool({ ...tool, row: !tool.row })}>한 줄 심기</FarmButton>
+          {tool && <small>{tool === 'harvest' ? '익은 밭을 손가락으로 쓸어 거둬요' : tool === 'water' ? '자라는 밭을 쓸면 30% 빨리 자라요 (한 번씩)' : tool.row ? '밭 하나를 누르면 같은 줄의 빈 밭에 심어요' : '작물을 고른 뒤 빈 밭을 누르거나 쓸어 심어요 · 칸당 ✦ ' + crops[tool.crop].seed}</small>}
         </div>}
 
         {!visitor && <nav className="farm-tools" aria-label="농장 도구">

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { signOut } from './actions'
 import { achievements, buildings, collectionSets, crops, products, recipes, seasonCrops } from '../lib/farm-catalog.mjs'
 import { levelProgress, maxLevel } from '../lib/farm-game.mjs'
@@ -406,15 +406,18 @@ export function Progress({ farm, pending, act }) {
 }
 
 function ObjectRecipes({ object, farm, now, pending, act }) {
+  const [optimisticQueue, setOptimisticQueue] = useState(null)
+  useEffect(() => { if (!pending) setOptimisticQueue(null) }, [pending])
   const available = Object.entries(recipes).filter(([, recipe]) => recipe.building === object.kind)
   if (!available.length) return null
   const queue = object.queue ?? []
+  const shownQueue = optimisticQueue ?? queue
   const level = object.level ?? 1
   const slots = 6 + 2 * level
   return <>
-    <p>{queue.length ? '작업 대기열 · ' + queue.length + ' / ' + slots : '만들 상품을 고르세요.'}{level > 1 ? ' · 증축 ' + level + '단계' : ''}</p>
-    {queue.length > 0 && <ul className="farm-list">
-      {queue.map((job, index) => <li key={index}><strong>{recipes[job.recipe]?.name || job.recipe}</strong>
+    <p>{shownQueue.length ? '작업 대기열 · ' + shownQueue.length + ' / ' + slots : '만들 상품을 고르세요.'}{level > 1 ? ' · 증축 ' + level + '단계' : ''}</p>
+    {shownQueue.length > 0 && <ul className="farm-list">
+      {shownQueue.map((job, index) => <li key={index}><strong>{recipes[job.recipe]?.name || job.recipe}</strong>
         <small>{job.readyAt <= now ? '완료' : remainingTime(job.readyAt - now)}</small></li>)}
     </ul>}
     <ul className="farm-list">
@@ -425,10 +428,13 @@ function ObjectRecipes({ object, farm, now, pending, act }) {
         </div><form className="farm-quantity" onSubmit={event => {
           event.preventDefault()
           const quantity = Number(new FormData(event.currentTarget).get('quantity')) || 1
+          let readyAt = Math.max(now, queue.at(-1)?.readyAt ?? now)
+          const interval = Math.round(recipe.seconds * 1000 * (1.1 - .1 * level))
+          setOptimisticQueue([...queue, ...Array.from({ length: quantity }, () => ({ recipe: id, readyAt: readyAt += interval }))])
           act({ type: 'enqueue', id: object.id, recipe: id, quantity }, '가공을 시작했어요.')
         }}>
           {limit > 1 && <input key={limit} type="number" name="quantity" aria-label={recipe.name + ' 작업 수량'} min="1" max={limit} defaultValue="1" required />}
-          <button className="farm-button" disabled={pending || limit < 1}>만들기</button>
+          <button className="farm-button" disabled={pending || limit < 1}>{pending && optimisticQueue ? '제작 접수 중…' : '만들기'}</button>
         </form></li>
       })}
     </ul>
