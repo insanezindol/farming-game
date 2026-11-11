@@ -850,7 +850,9 @@
 @media (max-height: 460px) and (orientation: landscape) {
   .farm-soon { top: calc(var(--top-inset) + 52px); }
 }
-.farm-summary .primary { min-height: 36px; padding: 2px 12px; font-size: .8rem; white-space: nowrap; }
+.farm-summary-text { min-width: 0; }
+/* 공통 .primary 의 width: 100% 가 요약 글을 한 글자 폭으로 밀어내지 않게 한다 */
+.farm-summary .primary { flex: none; width: auto; min-height: 36px; padding: 2px 12px; font-size: .8rem; white-space: nowrap; }
 
 /* ───── 들판 손님, 칭호 ───── */
 .farm-guest {
@@ -874,3 +876,9 @@
 .farm-title-badge { display: block; font-size: .72rem; color: #a2541c; font-family: var(--farm-cute); }
 .farm-title-pick { margin-left: 6px; min-height: 28px; padding: 1px 8px; border: 1px solid var(--farm-line); border-radius: 10px; background: #fff1b8; color: var(--farm-text); font-size: .72rem; }
 .farm-title-pick[aria-pressed=true] { background: #ff9f7a; color: #5a2f14; }
+
+/* 공통 버튼 hover/active 의 translateY 가 위치용 translate(-50%, …) 를 덮어쓰면 커서 밖으로 튀어 떨린다 */
+.farm-peddler-tag:not(:disabled):hover { transform: translate(-50%, -140%) translateY(-2px); }
+.farm-peddler-tag:not(:disabled):active { transform: translate(-50%, -140%) translateY(1px); }
+.farm-guest:not(:disabled):hover { transform: translate(-50%, -110%) translateY(-2px); }
+.farm-guest:not(:disabled):active { transform: translate(-50%, -110%) translateY(1px); }
