@@ -10,7 +10,7 @@ import { goldenCheck } from '../lib/farm-luck.mjs'
 import { cropIdentity, fieldGuest } from '../lib/farm-game.mjs'
 import {
   FarmButton, FarmMap, TileGrid, Shop, Seeds, Inventory, Orders, Progress, ObjectPanel, Peddler,
-  Settings, ParcelPanel, TerrainPanel, Help, objectName, terrainTileLabel, isReady, remainingTime, productBook, josa, inSeason,
+  Settings, ParcelPanel, TerrainPanel, Help, objectName, terrainTileLabel, isReady, remainingTime, productBook, josa,
 } from './farm-panels'
 import './farm.css'
 
@@ -722,11 +722,10 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
       timerGroups[key] = (timerGroups[key] ?? 0) + 1
     }
   }
-  const seedChoices = [...new Set([...(farm.favorites ?? []), 'wheat', 'carrot'])].filter(crop => crops[crop] && farm.level >= crops[crop].level).slice(0, 3)
   const guideStep = visitor || farm.settings?.guide === false ? null
     : !farm.stats?.planted ? 0 : !farm.stats?.harvested ? 1 : !(farm.stats?.sold || farm.stats?.orders) ? 2 : null
   const guideNotes = [
-    ['씨앗을 심어 보세요', '아래 도구에서 밀을 고르고 빈 밭을 쓸어 보거나, 빈 밭을 눌러 씨앗을 고르세요.'],
+    ['씨앗을 심어 보세요', '아래 작물 선택에서 씨앗을 고르고 빈 밭을 누르거나 쓸어 심어 보세요. 선택한 작물은 파종을 종료할 때까지 유지돼요.'],
     ['익으면 거둬요', '밭 위에 수확 표시가 뜨면 눌러서 바로 거두거나, 낫을 고르고 밭을 쓸어요.'],
     ['팔거나 주문에 보내요', '판매대를 눌러 팔거나, 트럭을 눌러 장터 소량 판매 주문을 채워 보세요.'],
   ]
@@ -843,8 +842,6 @@ export function Farm({ initialFarm, accountId, visitor = false }) {
           <FarmButton active={tool === 'harvest'} onClick={() => chooseTool('harvest')}>🌾 낫</FarmButton>
           <FarmButton active={tool === 'water'} onClick={() => chooseTool('water')}>💧 물뿌리개</FarmButton>
           <FarmButton disabled={!allEmpty.length} onClick={() => seed(allEmpty)}>빈 밭 모두 심기</FarmButton>
-          {seedChoices.map(crop => <FarmButton key={crop} active={tool?.crop === crop}
-            onClick={() => chooseTool({ crop })}>{crops[crop].icon} {crops[crop].name}{inSeason(farm, crop) ? ' · 제철' : ''}</FarmButton>)}
           <FarmButton onClick={() => open('planting')}>{tool?.crop ? '작물 바꾸기' : '작물 선택'}</FarmButton>
           {tool?.crop && <FarmButton onClick={() => setTool(null)}>파종 종료</FarmButton>}
           {tool && <small>{tool === 'harvest' ? '익은 밭을 손가락으로 쓸어 거둬요' : tool === 'water' ? '자라는 밭을 쓸면 30% 빨리 자라요 (한 번씩)' : crops[tool.crop].icon + ' ' + crops[tool.crop].name + ' 파종 중 · 빈 밭을 누르거나 쓸어 심어요 · 칸당 ✦ ' + crops[tool.crop].seed}</small>}

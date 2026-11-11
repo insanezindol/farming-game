@@ -328,21 +328,6 @@
 .farm-item > span { font-size: 1.41rem; line-height: 1; }
 .farm-item strong { font-size: .8rem; text-align: center; }
 .farm-item small { color: #6a5439; font-size: .69rem; font-weight: 690; }
-.farm-seed { position: relative; }
-.farm-favorite {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 31px;
-  min-height: 32px;
-  padding: 0;
-  border: 0;
-  border-radius: 7px;
-  color: #825e2d;
-  background: transparent;
-  font-size: 1rem;
-}
-.farm-favorite[aria-pressed=true] { color: #815015; }
 .farm-list { list-style: none; margin: 0 0 9px; padding: 0; }
 .farm-list li {
   display: flex;

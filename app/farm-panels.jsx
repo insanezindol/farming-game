@@ -186,25 +186,19 @@ export function Shop({ farm, choose, restore }) {
 }
 
 export function Seeds({ farm, ids = [], act, choose }) {
-  const favorites = farm.favorites ?? []
   const count = choose ? 1 : ids.length
-  const seeds = Object.entries(crops).sort(([a], [b]) => Number(favorites.includes(b)) - Number(favorites.includes(a)))
   return <>
     <p>{choose ? '작물을 고르면 원하는 빈 밭에 계속 심을 수 있어요. 다른 작물을 고르거나 파종을 종료할 때까지 유지돼요.' : ids.length === 1 ? '심을 씨앗을 고르세요.' : '빈 밭 ' + ids.length + '칸에 같은 씨앗을 심어요.'}</p>
     <div className="farm-catalog farm-seeds">
-      {seeds.map(([id, crop]) => {
+      {Object.entries(crops).map(([id, crop]) => {
         const locked = farm.level < crop.level
-        return <div className="farm-seed" key={id}>
-          <button className="farm-item" type="button" disabled={locked || !choose && farm.coins < crop.seed * count}
+        return <button key={id} className="farm-item" type="button" disabled={locked || !choose && farm.coins < crop.seed * count}
             onClick={() => choose ? choose(id) : act({ type: 'plant', ids, crop: id }, crop.name + ' 씨앗을 심었어요.')}>
             <span aria-hidden="true">{crop.icon || '🌱'}</span><strong>{crop.name}</strong>
             {inSeason(farm, id) && <small className="farm-season-badge">제철 +20%</small>}
             <small>{locked ? 'Lv. ' + crop.level : (choose ? '칸당 ' : '') + '✦ ' + (crop.seed * count).toLocaleString('ko-KR')}</small>
             <small>{remainingTime(crop.seconds * 1000)}</small>
-          </button>
-          <button className="farm-favorite" type="button" aria-label={crop.name + ' 즐겨찾기'} aria-pressed={favorites.includes(id)}
-            onClick={() => act({ type: 'favorite', crop: id })}>{favorites.includes(id) ? '★' : '☆'}</button>
-        </div>
+        </button>
       })}
     </div>
   </>
